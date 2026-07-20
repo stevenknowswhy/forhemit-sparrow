@@ -1,0 +1,27 @@
+# Virtual environments
+agent/venv/
+agent/__pycache__/
+marketing-site/.next/
+marketing-site/node_modules/
+sparrow-app/target/
+
+# Env files with secrets
+agent/.env
+marketing-site/.env.local
+
+# OS files
+.DS_Store
+*.swp
+*~
+
+# IDE
+.vscode/
+.idea/
+
+# Tauri artifacts
+sparrow-app/src-tauri/target/
+sparrow-app/src-tauri/icons/
+
+# Cache
+.agnes/
+.cache/

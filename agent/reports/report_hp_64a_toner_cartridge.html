@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sparrow Report — HP 64A toner cartridge</title>
+<style>
+:root {
+    --navy: #0f172a;
+    --navy-light: #1e293b;
+    --accent: #059669;
+    --accent-light: #10b981;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --slate-50: #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-300: #cbd5e1;
+    --slate-400: #94a3b8;
+    --slate-500: #64748b;
+    --slate-600: #475569;
+    --white: #ffffff;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--slate-100);
+    color: var(--navy);
+    line-height: 1.6;
+    padding: 2rem 1rem;
+}
+
+.report-container {
+    max-width: 860px;
+    margin: 0 auto;
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+
+/* ── Hero ── */
+.hero {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+    color: var(--white);
+    padding: 2.5rem 2rem;
+    text-align: center;
+}
+.hero h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+.hero .recommendation {
+    font-size: 1.25rem;
+    color: var(--accent-light);
+    margin-bottom: 1rem;
+}
+.hero .savings {
+    font-size: 2.5rem;
+    font-weight: 800;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: var(--accent-light);
+}
+.hero .meta {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: var(--slate-300);
+}
+.hero .meta span strong {
+    color: var(--white);
+}
+
+/* ── Sections ── */
+.section {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--slate-200);
+}
+.section:last-child { border-bottom: none; }
+.section h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.section h2 .icon { font-size: 1.2rem; }
+
+/* ── Comparison Table ── */
+.comp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+.comp-table th {
+    background: var(--slate-50);
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--slate-600);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid var(--slate-200);
+}
+.comp-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--slate-200);
+    vertical-align: top;
+}
+.comp-table tr.best td {
+    background: rgba(5, 150, 105, 0.05);
+    border-left: 3px solid var(--accent);
+}
+.comp-table .score-cell {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-weight: 700;
+    font-size: 1rem;
+}
+.comp-table .score-high { color: var(--accent); }
+.comp-table .score-med { color: var(--warning); }
+.comp-table .score-low { color: var(--danger); }
+.comp-table .price-cell {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    white-space: nowrap;
+}
+.comp-table .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+.badge-best { background: var(--accent); color: var(--white); }
+.badge-secondhand { background: var(--warning); color: var(--white); }
+
+/* ── Dimension Bars ── */
+.dim-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.4rem 0;
+    font-size: 0.85rem;
+}
+.dim-label {
+    flex: 0 0 180px;
+    color: var(--slate-600);
+}
+.dim-bar-bg {
+    flex: 1;
+    height: 12px;
+    background: var(--slate-200);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.dim-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.3s;
+}
+.dim-score {
+    flex: 0 0 40px;
+    text-align: right;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+/* ── Scenario Cards ── */
+.scenarios {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+.scenario-card {
+    background: var(--slate-50);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius);
+    padding: 1rem;
+}
+.scenario-card h3 {
+    font-size: 0.85rem;
+    color: var(--slate-500);
+    margin-bottom: 0.3rem;
+}
+.scenario-card .pick {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--navy);
+}
+.scenario-card .why {
+    font-size: 0.8rem;
+    color: var(--slate-500);
+    margin-top: 0.25rem;
+}
+
+/* ── Sources ── */
+.source-item {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+    font-size: 0.8rem;
+    color: var(--slate-500);
+    border-bottom: 1px solid var(--slate-100);
+}
+.source-item:last-child { border-bottom: none; }
+.source-num {
+    flex: 0 0 1.5rem;
+    font-weight: 600;
+    color: var(--slate-400);
+}
+.source-link {
+    color: var(--accent);
+    text-decoration: none;
+}
+.source-link:hover { text-decoration: underline; }
+
+/* ── Footer ── */
+.footer {
+    background: var(--slate-50);
+    padding: 1rem 2rem;
+    font-size: 0.75rem;
+    color: var(--slate-400);
+    text-align: center;
+    border-top: 1px solid var(--slate-200);
+}
+
+/* ── Print ── */
+@media print {
+    body { background: white; padding: 0; }
+    .report-container { box-shadow: none; }
+    .hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+</style>
+</head>
+<body>
+<div class="report-container">
+
+    <!-- HERO -->
+    <div class="hero">
+        <h1>💡 Savings Opportunity Identified</h1>
+        
+        <div class="recommendation">
+            We recommend switching to <strong>eBay</strong> for <strong>HP 64A toner cartridge</strong>
+        </div>
+        
+        <div class="savings">$?</div>
+        <div style="font-size:0.85rem;color:var(--slate-300);margin-top:0.25rem;">
+            Estimated annual savings
+        </div>
+        <div class="meta">
+            <span><strong>Confidence:</strong> 53%</span>
+            <span><strong>Risk:</strong> <span style="color:var(--warning)">Medium Risk</span></span>
+            <span><strong>Search:</strong> 2026-07-20T22:22:39</span>
+            <span><strong>Options:</strong> 2</span>
+        </div>
+    </div>
+
+    <!-- COMPARISON TABLE -->
+    <div class="section">
+        <h2><span class="icon">📊</span> Comparison Overview</h2>
+        
+    <table class="comp-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Product / Vendor</th>
+                <th>Price</th>
+                <th>Score</th>
+                <th>Quality</th>
+                <th>Ship</th>
+            </tr>
+        </thead>
+        <tbody>
+        <tr class="best">
+            <td>1</td>
+            <td><strong>HP 64A toner cartridge</strong><br><small style="color:var(--slate-500)">eBay</small><span class="badge badge-best">★ Recommended</span></td>
+            <td class="price-cell">$None</td>
+            <td class="score-cell score-med">53</td>
+            <td class="score-cell">50</td>
+            <td>Noned</td>
+        </tr>
+        <tr class="">
+            <td>2</td>
+            <td><strong>HP 64A toner cartridge</strong><br><small style="color:var(--slate-500)">Unknown</small></td>
+            <td class="price-cell">$None</td>
+            <td class="score-cell score-med">53</td>
+            <td class="score-cell">50</td>
+            <td>Noned</td>
+        </tr></tbody>
+    </table>
+    </div>
+
+    <!-- DIMENSION BREAKDOWN -->
+    <div class="section">
+        <h2><span class="icon">🔍</span> Dimension Breakdown</h2>
+        <h3 style='font-size:0.95rem;margin:1rem 0 0.5rem;'>HP 64A toner cartridge — eBay <span style='float:right;color:var(--accent);font-family:monospace;font-weight:700;'>53/100</span></h3>
+
+        <div class="dim-row">
+            <span class="dim-label">Price (Landed Cost)</span>
+            <div class="dim-bar-bg">
+                <div class="dim-bar-fill" style="width:50%;background:var(--warning);"></div>
+            </div>
+            <span class="dim-score">50</span>
+        </div>
+
+        <div class="dim-row">
+            <span class="dim-label">Quality / Reliability</span>
+            <div class="dim-bar-bg">
+                <div class="dim-bar-fill" style="width:50%;background:var(--warning);"></div>
+            </div>
+            <span class="dim-score">50</span>
+        </div>
+
+        <div class="dim-row">
+            <span class="dim-label">Shipping Speed</span>
+            <div class="dim-bar-bg">
+                <div class="dim-bar-fill" style="width:50%;background:var(--warning);"></div>
+            </div>
+            <span class="dim-score">50</span>
+        </div>
+
+        <div class="dim-row">
+            <span class="dim-label">Vendor Reputation</span>
+            <div class="dim-bar-bg">
+                <div class="dim-bar-fill" style="width:50%;background:var(--warning);"></div>
+            </div>
+            <span class="dim-score">50</span>
+        </div>
+
+        <div class="dim-row">
+            <span class="dim-label">Warranty / Service</span>
+            <div class="dim-bar-bg">
+                <div class="dim-bar-fill" style="width:70%;background:var(--warning);"></div>
+            </div>
+            <span class="dim-score">70</span>
+        </div>
+
+        <div class="dim-row">
+            <span class="dim-label">Sustainability</span>
+            <div class="dim-bar-bg">
+                <div class="dim-bar-fill" style="width:40%;background:var(--danger);"></div>
+            </div>
+            <span class="dim-score">40</span>
+        </div>
+
+        <div class="dim-row">
+            <span class="dim-label">Secondhand Condition</span>
+            <div class="dim-bar-bg">
+                <div class="dim-bar-fill" style="width:50%;background:var(--warning);"></div>
+            </div>
+            <span class="dim-score">50</span>
+        </div>
+
+        <div class="dim-row">
+            <span class="dim-label">Preference Alignment</span>
+            <div class="dim-bar-bg">
+                <div class="dim-bar-fill" style="width:75%;background:var(--accent);"></div>
+            </div>
+            <span class="dim-score">75</span>
+        </div>
+<h3 style='font-size:0.95rem;margin:1rem 0 0.5rem;'>HP 64A toner cartridge — Unknown <span style='float:right;color:var(--accent);font-family:monospace;font-weight:700;'>53/100</span></h3>
+
+        <div class="dim-row">
+            <span class="dim-label">Price (Landed Cost)</span>
+            <div class="dim-bar-bg">
+                <div class="dim-bar-fill" style="width:50%;background:var(--warning);"></div>
+            </div>
+            <span class="dim-score">50</span>
+        </div>
+
+        <div class="dim-row">
+            <span class="dim-label">Quality / Reliability</span>
+            <div class="dim-bar-bg">
+                <div class="dim-bar-fill" style="width:50%;background:var(--warning);"></div>
+            </div>
+            <span class="dim-score">50</span>
+        </div>
+
+        <div class="dim-row">
+            <span class="dim-label">Shipping Speed</span>
+            <div class="dim-bar-bg">
+                <div class="dim-bar-fill" style="width:50%;background:var(--warning);"></div>
+            </div>
+            <span class="dim-score">50</span>
+        </div>
+
+        <div class="dim-row">
+            <span class="dim-label">Vendor Reputation</span>
+            <div class="dim-bar-bg">
+                <div class="dim-bar-fill" style="width:50%;background:var(--warning);"></div>
+            </div>
+            <span class="dim-score">50</span>
+        </div>
+
+        <div class="dim-row">
+            <span class="dim-label">Warranty / Service</span>
+            <div class="dim-bar-bg">
+                <div class="dim-bar-fill" style="width:70%;background:var(--warning);"></div>
+            </div>
+            <span class="dim-score">70</span>
+        </div>
+
+        <div class="dim-row">
+            <span class="dim-label">Sustainability</span>
+            <div class="dim-bar-bg">
+                <div class="dim-bar-fill" style="width:40%;background:var(--danger);"></div>
+            </div>
+            <span class="dim-score">40</span>
+        </div>
+
+        <div class="dim-row">
+            <span class="dim-label">Secondhand Condition</span>
+            <div class="dim-bar-bg">
+                <div class="dim-bar-fill" style="width:50%;background:var(--warning);"></div>
+            </div>
+            <span class="dim-score">50</span>
+        </div>
+
+        <div class="dim-row">
+            <span class="dim-label">Preference Alignment</span>
+            <div class="dim-bar-bg">
+                <div class="dim-bar-fill" style="width:75%;background:var(--accent);"></div>
+            </div>
+            <span class="dim-score">75</span>
+        </div>
+    </div>
+
+    <!-- WHAT-IF SCENARIOS -->
+    <div class="section">
+        <h2><span class="icon">🎯</span> What-If Scenarios</h2>
+        <div class='scenarios'>
+        <div class="scenario-card">
+            <h3>Prioritize Price</h3>
+            <div class="pick">HP 64A toner cartridge — eBay</div>
+            <div class="why">Lowest total landed cost (Score: 53)</div>
+        </div>
+        <div class="scenario-card">
+            <h3>Prioritize Quality</h3>
+            <div class="pick">HP 64A toner cartridge — eBay</div>
+            <div class="why">Highest quality/reliability score (Score: 53)</div>
+        </div>
+        <div class="scenario-card">
+            <h3>Need It Fastest</h3>
+            <div class="pick">HP 64A toner cartridge — eBay</div>
+            <div class="why">Estimated None day delivery (Score: 53)</div>
+        </div></div>
+    </div>
+
+    <!-- EDGE CASE -->
+    
+        <div class="section" style="background:rgba(220,38,38,0.05);border-left:4px solid var(--danger);">
+            <h2><span class="icon">⚠️</span> No Strong Alternative Found</h2>
+            <p style="font-size:0.9rem;color:var(--slate-600);">
+                None of the available alternatives scored above 65/100. Consider:
+            </p>
+            <ul style="font-size:0.85rem;color:var(--slate-600);padding-left:1.2rem;margin-top:0.5rem;">
+                <li><strong>Negotiate</strong> with your current vendor for better pricing</li>
+                <li><strong>Wait</strong> for seasonal price drops (typically Q4)</li>
+                <li><strong>Expand search</strong> to include refurbished or auction options</li>
+            </ul>
+        </div>
+
+    <!-- SOURCES -->
+    <div class="section">
+        <h2><span class="icon">📎</span> Sources & Provenance</h2>
+        
+        <div class="source-item">
+            <span class="source-num">1.</span>
+            <span><strong>eBay</strong> — <a href="https://www.ebay.com/itm/365005079142" class="source-link" target="_blank">https://www.ebay.com/itm/365005079142</a></span>
+        </div>
+
+        <div class="source-item">
+            <span class="source-num">2.</span>
+            <span><strong>Unknown</strong> — <a href="https://www.hp.com/in-en/shop/hp-laserjet-pro-mfp-4104dw-printer-2z632a.html" class="source-link" target="_blank">https://www.hp.com/in-en/shop/hp-laserjet-pro-mfp-4104dw-printer-2z632a.html</a></span>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+        Generated by Sparrow AI · Product Comparison Report · 2026-07-20T22:22:39 UTC<br>
+        Scores based on 8-dimension rubric · Data refreshed at time of search
+    </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,2 @@
+# Environment variables (never commit .env to git)
+.env

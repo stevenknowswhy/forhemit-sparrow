@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sparrow — CFO Pro Buyer Report</title>
+
+<!-- Astryx Design System -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/core/reset.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/core/astryx.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral/theme.css">
+
+<style>
+/* ============================================================
+   SPARROW REPORT — Built on Astryx Design System
+   Components: Card, Table, Badge, ProgressBar, Button, VStack,
+              HStack, Divider, Text, Heading, StatusDot, Token,
+              Banner, Collapsible, Tabs, IconButton, Tooltip
+   ============================================================ */
+
+:root {
+  --sparrow-navy:    #0f172a;
+  --sparrow-green:   #059669;
+  --sparrow-amber:   #d97706;
+  --sparrow-red:     #dc2626;
+  --sparrow-blue:    #2563eb;
+  --sparrow-gray:    #64748b;
+  --sparrow-light:   #f8fafc;
+  --sparrow-border:  #e2e8f0;
+  --sparrow-radius:  12px;
+}
+
+/* ---- Global ---- */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--sparrow-light);
+  color: #334155;
+  line-height: 1.6;
+}
+
+.report {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 20px 16px 60px;
+}
+
+/* ---- Header ---- */
+.report-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--sparrow-border);
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.report-brand {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--sparrow-navy);
+  letter-spacing: -.02em;
+}
+.report-brand em {
+  font-style: normal;
+  color: var(--sparrow-green);
+}
+.report-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: .78rem;
+  font-weight: 600;
+  border: 1px solid var(--sparrow-border);
+  background: white;
+  color: #475569;
+  cursor: pointer;
+  transition: all .15s ease;
+  text-decoration: none;
+}
+.export-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: var(--sparrow-navy);
+}
+.export-btn svg { width: 14px; height: 14px; }
+
+/* ---- Hero Card (Astryx Card) ---- */
+.hero-card {
+  background: white;
+  border-radius: var(--sparrow-radius);
+  box-shadow: 0 4px 12px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.04);
+  padding: 28px 24px;
+  margin-bottom: 20px;
+  border-left: 5px solid var(--sparrow-green);
+  position: relative;
+}
+.hero-card::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 220px; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(5,150,105,.04));
+  pointer-events: none;
+  border-radius: 0 var(--sparrow-radius) var(--sparrow-radius) 0;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: .68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--sparrow-green);
+  background: #ecfdf5;
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  border: 1px solid #a7f3d0;
+}
+.hero-badge.warn {
+  color: var(--sparrow-amber);
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+.hero-headline {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--sparrow-navy);
+  line-height: 1.35;
+  margin-bottom: 16px;
+  letter-spacing: -.01em;
+}
+
+/* ---- Stats Grid ---- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.stat-card {
+  text-align: center;
+  padding: 14px 8px;
+  background: var(--sparrow-light);
+  border-radius: 10px;
+  border: 1px solid var(--sparrow-border);
+}
+.stat-label {
+  font-size: .65rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--sparrow-gray);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+.stat-value {
+  font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--sparrow-navy);
+  letter-spacing: -.02em;
+}
+.stat-value.green { color: var(--sparrow-green); }
+.stat-value.amber { color: var(--sparrow-amber); }
+
+/* ---- Hero Actions ---- */
+.hero-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: .85rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all .15s ease;
+  font-family: inherit;
+}
+.btn-primary {
+  background: var(--sparrow-green);
+  color: white;
+}
+.btn-primary:hover { background: #047857; }
+.btn-secondary {
+  background: var(--sparrow-light);
+  color: #475569;
+  border: 1px solid var(--sparrow-border);
+}
+.btn-secondary:hover { background: #e2e8f0; }
+.btn-outline {
+  background: transparent;
+  color: var(--sparrow-gray);
+  border: 1px solid var(--sparrow-border);
+}
+.btn-outline:hover { color: #475569; border-color: #cbd5e1; }
+
+/* ---- Confidence Ring ---- */
+.confidence-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--sparrow-border);
+}
+.confidence-ring {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'SF Mono', monospace;
+  font-size: .82rem;
+  font-weight: 800;
+  color: white;
+  flex-shrink: 0;
+}
+.confidence-ring.high { background: var(--sparrow-green); }
+.confidence-ring.mid { background: var(--sparrow-amber); }
+.confidence-ring.low { background: var(--sparrow-red); }
+.confidence-text {
+  font-size: .78rem;
+  color: var(--sparrow-gray);
+  line-height: 1.4;
+}
+.confidence-text strong { color: #334155; font-weight: 600; }
+
+/* ---- Section Card ---- */
+.section-card {
+  background: white;
+  border-radius: var(--sparrow-radius);
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  padding: 22px 24px;
+  margin-bottom: 18px;
+}
+.section-title {
+  font-size: .68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--sparrow-gray);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  background: var(--sparrow-green);
+  border-radius: 2px;
+}
+
+/* ---- Comparison Table (Astryx Table) ---- */
+.compare-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: .82rem;
+}
+.compare-table thead th {
+  text-align: left;
+  font-size: .65rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--sparrow-gray);
+  padding: 8px 10px;
+  border-bottom: 2px solid var(--sparrow-light);
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--sparrow-light);
+}
+.compare-table thead th:first-child { border-radius: 8px 0 0 0; }
+.compare-table thead th:last-child { border-radius: 0 8px 0 0; }
+.compare-table tbody td {
+  padding: 11px 10px;
+  border-bottom: 1px solid var(--sparrow-border);
+  vertical-align: middle;
+}
+.compare-table tbody tr:last-child td { border-bottom: none; }
+.compare-table tbody tr.recommended {
+  background: #f0fdf4;
+}
+.compare-table tbody tr.recommended td:first-child {
+  border-left: 3px solid var(--sparrow-green);
+}
+.vendor-name {
+  font-weight: 700;
+  color: var(--sparrow-navy);
+  display: block;
+  line-height: 1.3;
+}
+.vendor-sub {
+  font-size: .72rem;
+  color: var(--sparrow-gray);
+  font-weight: 400;
+}
+.price {
+  font-family: 'SF Mono', monospace;
+  font-weight: 700;
+  color: var(--sparrow-navy);
+  font-size: .92rem;
+}
+.savings-val {
+  font-family: 'SF Mono', monospace;
+  font-weight: 700;
+  color: var(--sparrow-green);
+}
+.loss-val {
+  font-family: 'SF Mono', monospace;
+  font-weight: 700;
+  color: var(--sparrow-red);
+}
+
+/* ---- Score Bar ---- */
+.score-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.score-track {
+  flex: 1;
+  height: 7px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 40px;
+}
+.score-fill {
+  height: 100%;
+  border-radius: 4px;
+}
+.score-fill.high { background: var(--sparrow-green); }
+.score-fill.mid { background: var(--sparrow-amber); }
+.score-fill.low { background: var(--sparrow-red); }
+.score-num {
+  font-family: 'SF Mono', monospace;
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--sparrow-navy);
+  min-width: 30px;
+  text-align: right;
+}
+
+/* ---- Badges (Astryx Badge) ---- */
+.badge {
+  display: inline-block;
+  font-size: .62rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 5px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-top: 3px;
+}
+.badge-low { background: #ecfdf5; color: var(--sparrow-green); border: 1px solid #a7f3d0; }
+.badge-mid { background: #fffbeb; color: var(--sparrow-amber); border: 1px solid #fde68a; }
+.badge-high { background: #fef2f2; color: var(--sparrow-red); border: 1px solid #fecaca; }
+.badge-new { background: #eff6ff; color: var(--sparrow-blue); border: 1px solid #bfdbfe; }
+.badge-refurb { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.badge-auction { background: #ede9fe; color: #6d28d9; border: 1px solid #c4b5fd; }
+
+/* ---- Dimension Bars ---- */
+.dim-list { display: flex; flex-direction: column; gap: 10px; }
+.dim-item {
+  display: grid;
+  grid-template-columns: 130px 1fr 44px;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--sparrow-light);
+  border-radius: 8px;
+  border: 1px solid var(--sparrow-border);
+}
+.dim-label {
+  font-size: .8rem;
+  font-weight: 600;
+  color: #334155;
+  line-height: 1.3;
+}
+.dim-weight {
+  font-size: .68rem;
+  color: var(--sparrow-gray);
+  font-weight: 400;
+}
+.dim-bar {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.dim-fill {
+  height: 100%;
+  border-radius: 4px;
+}
+.dim-score {
+  font-family: 'SF Mono', monospace;
+  font-size: .82rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+/* ---- What-If Cards ---- */
+.whatif-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+.whatif-card {
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid var(--sparrow-border);
+  background: var(--sparrow-light);
+  transition: all .15s ease;
+}
+.whatif-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0,0,0,.04);
+}
+.whatif-card h4 {
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--sparrow-navy);
+  margin-bottom: 4px;
+}
+.whatif-card p {
+  font-size: .75rem;
+  color: var(--sparrow-gray);
+  line-height: 1.4;
+}
+.whatif-card .sv {
+  font-family: 'SF Mono', monospace;
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--sparrow-green);
+  margin-top: 6px;
+}
+
+/* ---- Sources ---- */
+.source-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.source-list li {
+  font-size: .78rem;
+  color: var(--sparrow-gray);
+  padding: 8px 12px;
+  background: var(--sparrow-light);
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--sparrow-border);
+}
+.source-url {
+  font-family: 'SF Mono', monospace;
+  font-size: .7rem;
+  color: var(--sparrow-blue);
+  word-break: break-all;
+}
+.source-tag {
+  font-size: .62rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+.source-tag.live { background: #ecfdf5; color: var(--sparrow-green); }
+.source-tag.est { background: #fffbeb; color: var(--sparrow-amber); }
+
+/* ---- Edge Case Banner ---- */
+.edge-banner {
+  padding: 16px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+.edge-banner h3 {
+  font-size: .92rem;
+  color: var(--sparrow-amber);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.edge-banner p {
+  font-size: .82rem;
+  color: #334155;
+  margin-bottom: 10px;
+}
+
+/* ---- Tabs ---- */
+.tabs-nav {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--sparrow-border);
+  margin-bottom: 16px;
+}
+.tab-btn {
+  padding: 8px 16px;
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--sparrow-gray);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  transition: all .15s ease;
+  font-family: inherit;
+}
+.tab-btn.active {
+  color: var(--sparrow-navy);
+  border-bottom-color: var(--sparrow-green);
+}
+.tab-btn:hover:not(.active) {
+  color: #475569;
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ---- Collapsible ---- */
+.collapsible-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--sparrow-light);
+  border: 1px solid var(--sparrow-border);
+  border-radius: 8px;
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--sparrow-navy);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s ease;
+}
+.collapsible-toggle:hover { background: #e2e8f0; }
+.collapsible-toggle .arrow { transition: transform .2s ease; }
+.collapsible-toggle.open .arrow { transform: rotate(180deg); }
+.collapsible-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .3s ease;
+}
+.collapsible-body.open {
+  max-height: 2000px;
+}
+
+/* ---- Footer ---- */
+.report-footer {
+  text-align: center;
+  font-size: .7rem;
+  color: var(--sparrow-gray);
+  padding: 20px 0 0;
+  border-top: 1px solid var(--sparrow-border);
+}
+
+/* ---- Toast ---- */
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.toast {
+  padding: 10px 16px;
+  background: var(--sparrow-navy);
+  color: white;
+  border-radius: 8px;
+  font-size: .82rem;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
+  animation: toastIn .3s ease, toastOut .3s ease 2.7s forwards;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toast.success { border-left: 3px solid var(--sparrow-green); }
+.toast.info { border-left: 3px solid var(--sparrow-blue); }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes toastOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-10px); }
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 640px) {
+  .report { padding: 12px 10px 36px; }
+  .hero-card { padding: 20px 16px; }
+  .section-card { padding: 18px 14px; }
+  .hero-headline { font-size: 1.1rem; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .stat-value { font-size: 1.2rem; }
+  .dim-item { grid-template-columns: 1fr; gap: 4px; }
+  .dim-score { text-align: left; }
+  .compare-table { font-size: .75rem; }
+  .compare-table thead th,
+  .compare-table tbody td { padding: 7px 5px; }
+  .whatif-grid { grid-template-columns: 1fr; }
+  .hero-actions { flex-direction: column; }
+  .btn { justify-content: center; }
+  .report-actions { width: 100%; }
+  .export-btn { flex: 1; justify-content: center; }
+}
+
+/* ---- Print ---- */
+@media print {
+  body { background: white; }
+  .report { max-width: 100%; padding: 0; }
+  .hero-card { box-shadow: none; border: 2px solid #e2e8f0; }
+  .section-card { box-shadow: none; border: 1px solid #e2e8f0; }
+  .btn, .export-btn, .toast-container { display: none !important; }
+  .hero-actions { display: none !important; }
+  .tabs-nav { display: none !important; }
+  .tab-panel { display: block !important; }
+  .collapsible-body { max-height: none !important; overflow: visible !important; }
+  .collapsible-toggle { display: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="report">
+
+  <!-- ==================== TOP BAR ==================== -->
+  <div class="report-topbar">
+    <div class="report-brand">SPARROW<em>.</em></div>
+    <div class="report-actions">
+      <button class="export-btn" onclick="exportPDF()" title="Export to PDF">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+        PDF
+      </button>
+      <button class="export-btn" onclick="exportMarkdown()" title="Export to Markdown">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Markdown
+      </button>
+      <button class="export-btn" onclick="exportCSV()" title="Export to CSV">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+        CSV
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== HERO CARD ==================== -->
+  <div class="hero-card">
+    <div class="hero-badge">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Recommendation Ready
+    </div>
+    <h1 class="hero-headline">We recommend switching to <strong>Ink Technologies</strong> for the HP 64A Toner Cartridge.</h1>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Annual Savings</div>
+        <div class="stat-value green">$196</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Sparrow Fee</div>
+        <div class="stat-value">$0.98</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Your Net</div>
+        <div class="stat-value green">$195.02</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Score</div>
+        <div class="stat-value">78.4</div>
+      </div>
+    </div>
+
+    <div class="hero-actions">
+      <button class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        Invoke Savings
+      </button>
+      <button class="btn btn-secondary">View Full Details</button>
+      <button class="btn btn-outline">Not Interested</button>
+    </div>
+
+    <div class="confidence-row">
+      <div class="confidence-ring high">89%</div>
+      <div class="confidence-text">
+        <strong>High confidence</strong> — 4 verified sources, 16+ reviews, stable pricing, authorized dealer confirmed.
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TABS ==================== -->
+  <div class="section-card">
+    <div class="tabs-nav">
+      <button class="tab-btn active" onclick="switchTab('summary')">Summary</button>
+      <button class="tab-btn" onclick="switchTab('dimensions')">Dimensions</button>
+      <button class="tab-btn" onclick="switchTab('sources')">Sources</button>
+    </div>
+
+    <!-- Tab: Summary -->
+    <div id="tab-summary" class="tab-panel active">
+      <div class="section-title">Comparison Matrix</div>
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Vendor</th>
+            <th>Price</th>
+            <th>Landed</th>
+            <th>Ship</th>
+            <th>Speed</th>
+            <th>Quality</th>
+            <th>Trust</th>
+            <th>Score</th>
+            <th>Savings</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="recommended">
+            <td>
+              <span class="vendor-name">Ink Technologies</span>
+              <span class="vendor-sub">Compatible • 16 reviews • 4.8★</span>
+            </td>
+            <td><span class="price">$39</span></td>
+            <td><span class="price">$39</span></td>
+            <td>Free</td>
+            <td>1 day</td>
+            <td>88</td>
+            <td>82</td>
+            <td>
+              <div class="score-bar">
+                <div class="score-track"><div class="score-fill high" style="width:78%"></div></div>
+                <span class="score-num">78.4</span>
+              </div>
+            </td>
+            <td><span class="savings-val">+$196/yr</span></td>
+          </tr>
+          <tr>
+            <td>
+              <span class="vendor-name">eBay — Vetted</span>
+              <span class="vendor-sub">OEM New • Free ship avail.</span>
+              <span class="badge badge-new">New</span>
+            </td>
+            <td><span class="price">$45</span></td>
+            <td><span class="price">$50</span></td>
+            <td>$4.50</td>
+            <td>3 days</td>
+            <td>85</td>
+            <td>70</td>
+            <td>
+              <div class="score-bar">
+                <div class="score-track"><div class="score-fill mid" style="width:68%"></div></div>
+                <span class="score-num">68.2</span>
+              </div>
+            </td>
+            <td><span class="savings-val">+$130/yr</span></td>
+          </tr>
+          <tr>
+            <td>
+              <span class="vendor-name">eBay — Refurbished</span>
+              <span class="vendor-sub">Remanufactured • No warranty</span>
+              <span class="badge badge-refurb">Refurbished</span>
+            </td>
+            <td><span class="price">$38</span></td>
+            <td><span class="price">$43</span></td>
+            <td>$4.50</td>
+            <td>3 days</td>
+            <td>62</td>
+            <td>55</td>
+            <td>
+              <div class="score-bar">
+                <div class="score-track"><div class="score-fill mid" style="width:58%"></div></div>
+                <span class="score-num">58.1</span>
+              </div>
+            </td>
+            <td><span class="loss-val">-$12/yr</span></td>
+          </tr>
+          <tr>
+            <td>
+              <span class="vendor-name">Current — Staples</span>
+              <span class="vendor-sub">OEM • Baseline</span>
+            </td>
+            <td><span class="price">$85</span></td>
+            <td><span class="price">$85</span></td>
+            <td>Free</td>
+            <td>1 day</td>
+            <td>92</td>
+            <td>92</td>
+            <td>
+              <div class="score-bar">
+                <div class="score-track"><div class="score-fill mid" style="width:50%"></div></div>
+                <span class="score-num">—</span>
+              </div>
+            </td>
+            <td><span style="color:var(--sparrow-gray);font-size:.78rem">Baseline</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tab: Dimensions -->
+    <div id="tab-dimensions" class="tab-panel">
+      <div class="section-title" style="margin-bottom:12px">8-Dimension Rubric — Ink Technologies</div>
+      <div class="dim-list">
+        <div class="dim-item">
+          <div class="dim-label">Unit Price <span class="dim-weight">(25%)</span></div>
+          <div class="dim-bar"><div class="dim-fill" style="width:92%;background:var(--sparrow-green)"></div></div>
+          <div class="dim-score" style="color:var(--sparrow-green)">92</div>
+        </div>
+        <div class="dim-item">
+          <div class="dim-label">Shipping <span class="dim-weight">(15%)</span></div>
+          <div class="dim-bar"><div class="dim-fill" style="width:95%;background:var(--sparrow-green)"></div></div>
+          <div class="dim-score" style="color:var(--sparrow-green)">95</div>
+        </div>
+        <div class="dim-item">
+          <div class="dim-label">Quality <span class="dim-weight">(20%)</span></div>
+          <div class="dim-bar"><div class="dim-fill" style="width:88%;background:var(--sparrow-green)"></div></div>
+          <div class="dim-score" style="color:var(--sparrow-green)">88</div>
+        </div>
+        <div class="dim-item">
+          <div class="dim-label">Speed <span class="dim-weight">(10%)</span></div>
+          <div class="dim-bar"><div class="dim-fill" style="width:95%;background:var(--sparrow-green)"></div></div>
+          <div class="dim-score" style="color:var(--sparrow-green)">95</div>
+        </div>
+        <div class="dim-item">
+          <div class="dim-label">Landed Cost <span class="dim-weight">(15%)</span></div>
+          <div class="dim-bar"><div class="dim-fill" style="width:90%;background:var(--sparrow-green)"></div></div>
+          <div class="dim-score" style="color:var(--sparrow-green)">90</div>
+        </div>
+        <div class="dim-item">
+          <div class="dim-label">Trust <span class="dim-weight">(8%)</span></div>
+          <div class="dim-bar"><div class="dim-fill" style="width:82%;background:var(--sparrow-green)"></div></div>
+          <div class="dim-score" style="color:var(--sparrow-green)">82</div>
+        </div>
+        <div class="dim-item">
+          <div class="dim-label">Compatibility <span class="dim-weight">(5%)</span></div>
+          <div class="dim-bar"><div class="dim-fill" style="width:95%;background:var(--sparrow-green)"></div></div>
+          <div class="dim-score" style="color:var(--sparrow-green)">95</div>
+        </div>
+        <div class="dim-item">
+          <div class="dim-label">Sustainability <span class="dim-weight">(2%)</span></div>
+          <div class="dim-bar"><div class="dim-fill" style="width:70%;background:var(--sparrow-amber)"></div></div>
+          <div class="dim-score" style="color:var(--sparrow-amber)">70</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Sources -->
+    <div id="tab-sources" class="tab-panel">
+      <div class="section-title" style="margin-bottom:12px">Sources &amp; Provenance</div>
+      <ul class="source-list">
+        <li>
+          <span>Ink Technologies pricing &amp; reviews</span>
+          <span class="source-url">inktechnologies.com</span>
+          <span class="source-tag live">Live</span>
+        </li>
+        <li>
+          <span>eBay listing prices &amp; seller ratings</span>
+          <span class="source-url">ebay.com</span>
+          <span class="source-tag live">Live</span>
+        </li>
+        <li>
+          <span>BT Business Direct UK pricing</span>
+          <span class="source-url">businessdirect.bt.com</span>
+          <span class="source-tag live">Live</span>
+        </li>
+        <li>
+          <span>Staples OEM baseline</span>
+          <span class="source-url">—</span>
+          <span class="source-tag est">Est.</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ==================== WHAT-IF SCENARIOS ==================== -->
+  <div class="section-card">
+    <div class="section-title">What-If Scenarios</div>
+    <div class="whatif-grid">
+      <div class="whatif-card">
+        <h4>💰 Price Only</h4>
+        <p>Lowest cost regardless of brand or warranty</p>
+        <div class="sv">eBay Refurb — $680/yr potential</div>
+      </div>
+      <div class="whatif-card">
+        <h4>⭐ Quality Only</h4>
+        <p>Genuine OEM with zero risk, full warranty</p>
+        <div class="sv">Staples OEM — $0 savings (baseline)</div>
+      </div>
+      <div class="whatif-card">
+        <h4>📦 Buy in Bulk (4-pack)</h4>
+        <p>Volume discount + free shipping unlocked</p>
+        <div class="sv">InkTech 4-pack — $192/yr + free ship</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== EDGE CASE ==================== -->
+  <div class="section-card">
+    <div class="section-title">Edge Case — No Strong Alternative</div>
+    <div class="edge-banner">
+      <h3>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        No Option Scored Above 65
+      </h3>
+      <p>When no alternative meets the minimum viability threshold, Sparrow suggests alternatives:</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-secondary" style="font-size:.8rem;padding:7px 14px">✉️ Negotiate Instead</button>
+        <button class="btn btn-outline" style="font-size:.8rem;padding:7px 14px">⏰ Wait for Price Drop</button>
+        <button class="btn btn-outline" style="font-size:.8rem;padding:7px 14px">📊 Show Exploratory Options</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="report-footer">
+    <p><strong>SPARROW CFO PRO BUYER AGENT</strong></p>
+    <p>Report ID: SPR-20260720-001 &nbsp;|&nbsp; Generated: July 20, 2026 &nbsp;|&nbsp; Mode: Live Research</p>
+    <p style="margin-top:4px;opacity:.7">Powered by local-first AI research. Prices and availability may change. Always verify before purchasing.</p>
+  </footer>
+
+</div>
+
+<!-- ==================== TOAST CONTAINER ==================== -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tabId).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ============================================================
+// TOAST NOTIFICATIONS
+// ============================================================
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  const icon = type === 'success' ? '✓' : 'ℹ';
+  toast.innerHTML = `<span>${icon}</span> ${message}`;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// ============================================================
+// EXPORT: PDF (uses browser print)
+// ============================================================
+function exportPDF() {
+  window.print();
+  showToast('PDF dialog opened — choose "Save as PDF"', 'info');
+}
+
+// ============================================================
+// EXPORT: MARKDOWN
+// ============================================================
+function exportMarkdown() {
+  const md = `# Sparrow CFO Pro Buyer Report
+Report ID: SPR-20260720-001
+Generated: July 20, 2026
+
+---
+
+## Executive Summary
+
+**We recommend switching to Ink Technologies for the HP 64A Toner Cartridge.**
+
+| Metric | Value |
+|--------|-------|
+| Annual Savings | **$196** |
+| Sparrow Fee | $0.98 |
+| Your Net Benefit | **$195.02** |
+| Comparison Score | 78.4/100 |
+| Confidence | 89% |
+
+---
+
+## Comparison Matrix
+
+| Vendor | Price | Landed | Shipping | Speed | Quality | Trust | Score | Annual Savings |
+|--------|-------|--------|----------|-------|---------|-------|-------|----------------|
+| **Ink Technologies** (Recommended) | \$39 | \$39 | Free | 1 day | 88 | 82 | **78.4** | **+\$196** |
+| eBay — Vetted | \$45 | \$50 | \$4.50 | 3 days | 85 | 70 | 68.2 | +\$130 |
+| eBay — Refurbished | \$38 | \$43 | \$4.50 | 3 days | 62 | 55 | 58.1 | -\$12 |
+| Current — Staples (Baseline) | \$85 | \$85 | Free | 1 day | 92 | 92 | — | Baseline |
+
+---
+
+## 8-Dimension Rubric (Ink Technologies)
+
+| Dimension | Weight | Score |
+|-----------|--------|-------|
+| Unit Price | 25% | 92 |
+| Shipping | 15% | 95 |
+| Quality | 20% | 88 |
+| Speed | 10% | 95 |
+| Landed Cost | 15% | 90 |
+| Trust | 8% | 82 |
+| Compatibility | 5% | 95 |
+| Sustainability | 2% | 70 |
+
+**Overall Score: 78.4/100**
+
+---
+
+## What-If Scenarios
+
+- **Price Only:** eBay Refurbished — up to \$680/yr potential
+- **Quality Only:** Staples OEM — \$0 savings (baseline)
+- **Buy in Bulk (4-pack):** Ink Technologies — \$192/yr + free shipping
+
+---
+
+## Sources
+
+- Ink Technologies pricing & reviews — inktechnologies.com (Live)
+- eBay listing prices & seller ratings — ebay.com (Live)
+- BT Business Direct UK pricing — businessdirect.bt.com (Live)
+- Staples OEM baseline — Estimated
+
+---
+
+*Sparrow CFO Pro Buyer Agent — Powered by local-first AI research*
+`;
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'sparrow-report-SPR-20260720-001.md';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Markdown report downloaded');
+}
+
+// ============================================================
+// EXPORT: CSV
+// ============================================================
+function exportCSV() {
+  const csv = `Vendor,Type,Unit Price,Shipping,Landed Cost,Speed (days),Quality,Trust,Score,Annual Savings,Risk Level,Badge
+"Ink Technologies",Compatible,$39.00,Free,$39.00,1,88,82,78.4,$196.00,LOW,New
+"eBay - Vetted",OEM New,$45.00,$4.50,$50.00,3,85,70,68.2,$130.00,LOW-MEDIUM,New
+"eBay - Refurbished",Remanufactured,$38.00,$4.50,$43.00,3,62,55,58.1,-$12.00,MEDIUM,Refurbished
+"Staples (Current)",OEM,$85.00,Free,$85.00,1,92,92,--,Baseline,LOW,New
+`;
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'sparrow-comparison-SPR-20260720-001.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV comparison downloaded');
+}
+</script>
+
+</body>
+</html>
