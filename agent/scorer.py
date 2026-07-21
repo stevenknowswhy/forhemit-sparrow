@@ -4,17 +4,8 @@
 Scores product alternatives across 8 dimensions (0-100 each),
 computes a weighted total, and returns a structured score dict.
 
-Dimensions (default weights sum to 100):
-  1. Price (total landed cost)        — 25%
-  2. Quality / reliability            — 20%
-  3. Shipping speed / availability    — 15%
-  4. Vendor reputation / trust        — 15%
-  5. Warranty / service terms         — 10%
-  6. Sustainability / eco-impact      —  5%
-  7. Secondhand condition             —  5%  (only for used/refurb items)
-  8. Preference alignment             —  5%  (user-specified priorities)
-
-Weights are configurable per job via the `weights` parameter.
+Supports multiple rubric presets (Consumer, Business) with
+different dimension definitions, labels, and weights.
 """
 from __future__ import annotations
 import math
@@ -22,57 +13,109 @@ from dataclasses import dataclass, field, asdict
 from typing import Optional
 
 
-# ── Dimension definitions ───────────────────────────────────────────
+# ── Rubric presets ─────────────────────────────────────────────
 
-DIMENSIONS = [
-    "price",
-    "quality",
-    "shipping_speed",
-    "vendor_reputation",
-    "warranty_service",
-    "sustainability",
-    "secondhand_condition",
-    "preference_alignment",
-]
-
-DEFAULT_WEIGHTS = {
-    "price": 0.25,
-    "quality": 0.20,
-    "shipping_speed": 0.15,
-    "vendor_reputation": 0.15,
-    "warranty_service": 0.10,
-    "sustainability": 0.05,
-    "secondhand_condition": 0.05,
-    "preference_alignment": 0.05,
+RUBRIC_PRESETS = {
+    "consumer": {
+        "label": "Consumer",
+        "description": "Balanced scoring for personal purchasing decisions. Weights price and quality equally with moderate emphasis on shipping speed and vendor trust.",
+        "dimensions": [
+            ("price",              {"label": "Price",              "weight": 0.25}),
+            ("quality",            {"label": "Quality / Reliability", "weight": 0.20}),
+            ("shipping_speed",     {"label": "Shipping Speed",     "weight": 0.15}),
+            ("vendor_reputation",  {"label": "Vendor Reputation",  "weight": 0.15}),
+            ("warranty_service",   {"label": "Warranty / Service", "weight": 0.10}),
+            ("sustainability",     {"label": "Sustainability",     "weight": 0.05}),
+            ("secondhand_condition", {"label": "Secondhand Condition", "weight": 0.05}),
+            ("preference_alignment", {"label": "Preference Alignment", "weight": 0.05}),
+        ],
+    },
+    "business": {
+        "label": "Business / CFO",
+        "description": "Total cost of ownership scoring for business purchasing. Merges shipping cost dimensions into a single logistics score — optimized for procurement decisions.",
+        "dimensions": [
+            ("unit_price",         {"label": "Unit Price",         "weight": 0.25}),
+            ("quality",            {"label": "Quality Score",      "weight": 0.20}),
+            ("supplier_trust",     {"label": "Supplier Trust",     "weight": 0.15}),
+            ("compatibility_risk", {"label": "Compatibility Risk", "weight": 0.13}),
+            ("logistics",          {"label": "Logistics Score",    "weight": 0.15}),
+            ("speed_reliability",  {"label": "Speed & Reliability","weight": 0.10}),
+            ("sustainability",     {"label": "Sustainability",     "weight": 0.02}),
+        ],
+    },
+    "it_procurement": {
+        "label": "IT Procurement",
+        "description": "Enterprise IT purchasing with emphasis on compatibility risk, warranty/service, and supplier trust. Designed for office technology (toner, printers, peripherals).",
+        "dimensions": [
+            ("unit_price",          {"label": "Unit Price",          "weight": 0.20}),
+            ("quality",             {"label": "Quality / Reliability","weight": 0.15}),
+            ("compatibility_risk",  {"label": "Compatibility Risk",  "weight": 0.20}),
+            ("supplier_trust",      {"label": "Supplier Trust",      "weight": 0.12}),
+            ("warranty_service",    {"label": "Warranty / Service",  "weight": 0.15}),
+            ("logistics",           {"label": "Logistics Score",     "weight": 0.10}),
+            ("speed_reliability",   {"label": "Speed & Reliability", "weight": 0.05}),
+            ("sustainability",      {"label": "Sustainability",      "weight": 0.03}),
+        ],
+    },
+    "freight_forwarder": {
+        "label": "Freight Forwarder",
+        "description": "Logistics-centric scoring for freight/shipping decisions. Heavy weight on landed cost, logistics speed, and supplier trust. Minimal sustainability emphasis.",
+        "dimensions": [
+            ("logistics",          {"label": "Logistics Score",     "weight": 0.30}),
+            ("unit_price",         {"label": "Unit Price / Cost",   "weight": 0.20}),
+            ("quality",            {"label": "Quality Score",       "weight": 0.10}),
+            ("supplier_trust",     {"label": "Supplier Trust",      "weight": 0.15}),
+            ("speed_reliability",  {"label": "Speed & Reliability", "weight": 0.15}),
+            ("compatibility_risk", {"label": "Compatibility Risk",  "weight": 0.05}),
+            ("sustainability",     {"label": "Sustainability",      "weight": 0.05}),
+        ],
+    },
 }
 
-DIM_LABELS = {
-    "price": "Price (Landed Cost)",
-    "quality": "Quality / Reliability",
-    "shipping_speed": "Shipping Speed",
-    "vendor_reputation": "Vendor Reputation",
-    "warranty_service": "Warranty / Service",
-    "sustainability": "Sustainability",
-    "secondhand_condition": "Secondhand Condition",
-    "preference_alignment": "Preference Alignment",
-}
+
+def get_preset(preset: str) -> dict:
+    if preset not in RUBRIC_PRESETS:
+        available = list(RUBRIC_PRESETS.keys())
+        raise ValueError(f"Unknown rubric preset '{preset}'. Available: {available}")
+    return RUBRIC_PRESETS[preset]
 
 
-# ── Data structures ─────────────────────────────────────────────────
+def get_preset_dimensions(preset: str) -> list[tuple[str, dict]]:
+    return get_preset(preset)["dimensions"]
+
+
+def get_preset_weights(preset: str) -> dict[str, float]:
+    return {k: v["weight"] for k, v in get_preset_dimensions(preset)}
+
+
+def get_preset_labels(preset: str) -> dict[str, str]:
+    return {k: v["label"] for k, v in get_preset_dimensions(preset)}
+
+
+def get_preset_dim_keys(preset: str) -> list[str]:
+    return [k for k, _ in get_preset_dimensions(preset)]
+
+
+# ── Backward compatibility aliases (Consumer preset) ──────────
+
+DIMENSIONS = get_preset_dim_keys("consumer")
+DEFAULT_WEIGHTS = get_preset_weights("consumer")
+DIM_LABELS = get_preset_labels("consumer")
+
+
+# ── Data structures ───────────────────────────────────────────
 
 @dataclass
 class DimensionScore:
-    """Score for a single dimension."""
     name: str
-    score: float       # 0-100
-    weight: float      # 0-1
+    score: float
+    weight: float
     weighted_score: float
     rationale: str = ""
 
 
 @dataclass
 class ProductScore:
-    """Complete rubric evaluation for one product."""
     product_name: str
     vendor: str
     url: str = ""
@@ -81,6 +124,8 @@ class ProductScore:
     rank_in_batch: int = 1
     is_secondhand: bool = False
     metadata: dict = field(default_factory=dict)
+    data_quality: dict[str, bool] = field(default_factory=dict)
+    confidence: float = 1.0
 
     def to_dict(self) -> dict:
         return {
@@ -92,10 +137,11 @@ class ProductScore:
             "rank_in_batch": self.rank_in_batch,
             "is_secondhand": self.is_secondhand,
             "metadata": self.metadata,
+            "confidence": round(self.confidence, 2),
         }
 
 
-# ── Core scorer ─────────────────────────────────────────────────────
+# ── Core scorer ──────────────────────────────────────────────
 
 def score_product(
     product_name: str,
@@ -103,34 +149,33 @@ def score_product(
     url: str = "",
     scores: Optional[dict[str, float]] = None,
     weights: Optional[dict[str, float]] = None,
+    preset: Optional[str] = None,
     is_secondhand: bool = False,
     secondhand_grade: Optional[str] = None,
     rationale: Optional[dict[str, str]] = None,
     metadata: Optional[dict] = None,
+    data_quality: Optional[dict[str, bool]] = None,
+    reference_scores: Optional[dict[str, float]] = None,
 ) -> ProductScore:
-    """
-    Score a single product across the 8-dimension rubric.
-
-    Args:
-        product_name: Human-readable product name
-        vendor: Vendor / seller name
-        url: Product page URL
-        scores: Dict of dimension scores (0-100). Missing dims default to 50.
-        weights: Dict of dimension weights. Defaults to DEFAULT_WEIGHTS.
-        is_secondhand: Whether this is a used/refurb item
-        secondhand_grade: Condition grade (Excellent, Good, Fair, Acceptable)
-        rationale: Dict of dimension → explanation strings
-        metadata: Extra fields (price, shipping_cost, etc.)
-
-    Returns:
-        ProductScore with all dimensions computed and weighted total.
-    """
-    weights = weights or DEFAULT_WEIGHTS.copy()
+    weights = weights or DEFAULT_WEIGHTS.copy() if preset is None else get_preset_weights(preset)
+    dim_keys = list(weights.keys())
     scores = scores or {}
     rationale = rationale or {}
     metadata = metadata or {}
+    data_quality = data_quality or {}
 
-    # Secondhand condition penalty
+    if reference_scores:
+        for dim in dim_keys:
+            ref = reference_scores.get(dim)
+            if ref is not None:
+                if dim not in scores:
+                    scores[dim] = ref
+                ref_val_delta = scores[dim] - ref
+                if scores[dim] >= ref:
+                    scores[dim] = min(100, 50 + ref_val_delta * 1.0)
+                else:
+                    scores[dim] = max(0, 50 + ref_val_delta * 1.0)
+
     if is_secondhand and secondhand_grade:
         grade_multipliers = {
             "excellent": 0.9,
@@ -139,15 +184,16 @@ def score_product(
             "acceptable": 0.3,
         }
         mult = grade_multipliers.get(secondhand_grade.lower(), 0.5)
-        scores["secondhand_condition"] = min(100, scores.get("secondhand_condition", 50) * mult)
+        sk = "secondhand_condition"
+        if sk in weights and weights[sk] > 0:
+            scores[sk] = min(100, scores.get(sk, 50) * mult)
 
     dimensions = []
     total_weighted = 0.0
     total_weight = 0.0
 
-    for dim in DIMENSIONS:
+    for dim in dim_keys:
         dim_score = scores.get(dim, 50.0)
-        # Clamp 0-100
         dim_score = max(0.0, min(100.0, float(dim_score)))
         w = weights.get(dim, 0.0)
         weighted = dim_score * w
@@ -162,37 +208,33 @@ def score_product(
             rationale=rationale.get(dim, ""),
         ))
 
-    # Normalize by actual weight sum (in case some dims have 0 weight)
     if total_weight > 0:
         total_weighted /= total_weight
+
+    if data_quality and dim_keys:
+        found = sum(1 for d in dim_keys if data_quality.get(d, False))
+        confidence = 0.5 + 0.5 * (found / len(dim_keys))
+    else:
+        confidence = 1.0
 
     return ProductScore(
         product_name=product_name,
         vendor=vendor,
         url=url,
         dimensions=dimensions,
-        total_weighted_score=round(total_weighted, 2),
+        total_weighted_score=round(total_weighted * confidence, 2),
         is_secondhand=is_secondhand,
         metadata=metadata,
+        data_quality=data_quality,
+        confidence=round(confidence, 2),
     )
 
 
-def score_batch(products: list[dict], weights: Optional[dict] = None) -> list[ProductScore]:
-    """
-    Score a batch of products and rank them.
-
-    Each product dict should have at least:
-      - product_name (str)
-      - vendor (str)
-      - scores (dict[str, float]) — dimension scores 0-100
-
-    Optional fields per product:
-      - url, is_secondhand, secondhand_grade, rationale, metadata
-
-    Returns:
-        Sorted list of ProductScore objects (highest score first),
-        with rank_in_batch set.
-    """
+def score_batch(
+    products: list[dict],
+    weights: Optional[dict] = None,
+    preset: Optional[str] = None,
+) -> list[ProductScore]:
     scored = []
     for p in products:
         ps = score_product(
@@ -201,146 +243,104 @@ def score_batch(products: list[dict], weights: Optional[dict] = None) -> list[Pr
             url=p.get("url", ""),
             scores=p.get("scores", {}),
             weights=weights,
+            preset=preset,
             is_secondhand=p.get("is_secondhand", False),
             secondhand_grade=p.get("secondhand_grade"),
             rationale=p.get("rationale", {}),
             metadata=p.get("metadata", {}),
+            data_quality=p.get("data_quality"),
+            reference_scores=p.get("reference_scores"),
         )
         scored.append(ps)
 
-    # Sort by total score descending
     scored.sort(key=lambda x: x.total_weighted_score, reverse=True)
-
-    # Assign ranks
     for i, ps in enumerate(scored, 1):
         ps.rank_in_batch = i
 
     return scored
 
 
-# ── Convenience: parse raw product data into scores ─────────────────
+# ── Convenience: parse raw product data into scores ──────────
 
 def parse_price_score(raw_price: float, price_range: tuple[float, float]) -> float:
-    """
-    Convert a raw price to a 0-100 score based on observed price range.
-    Lower price = higher score.
-    
-    Args:
-        raw_price: The actual price of this product
-        price_range: (min_price, max_price) from the batch
-        
-    Returns:
-        Score 0-100
-    """
     lo, hi = price_range
     if lo == hi:
-        return 100.0  # all same price
-    # Linear interpolation: cheapest = 100, most expensive = 0
+        return 100.0
     score = 100.0 * (1.0 - (raw_price - lo) / (hi - lo))
     return max(0.0, min(100.0, score))
 
 
 def parse_shipping_score(days: int, free_shipping: bool = False) -> float:
-    """
-    Convert shipping info to a 0-100 score.
-    
-    Args:
-        days: Estimated delivery days
-        free_shipping: Whether shipping is free
-        
-    Returns:
-        Score 0-100
-    """
-    score = 100.0 - (days * 8)  # lose 8 pts per day
+    score = 100.0 - (days * 8)
     if free_shipping:
-        score += 15  # bonus for free shipping
+        score += 15
     return max(0.0, min(100.0, score))
 
 
 def parse_quality_score(avg_rating: float, review_count: int = 0) -> float:
-    """
-    Convert star rating + review count to a 0-100 score.
-    
-    Args:
-        avg_rating: Average star rating (1-5)
-        review_count: Number of reviews
-        
-    Returns:
-        Score 0-100
-    """
-    # Star rating component (max 70)
     rating_score = (avg_rating / 5.0) * 70.0
-    # Review count component (max 30) — logarithmic scaling
     if review_count == 0:
-        count_score = 15  # neutral if unknown
+        count_score = 15
     else:
         count_score = min(30, 15 * math.log10(review_count + 1))
     return max(0.0, min(100.0, rating_score + count_score))
 
 
-def parse_vendor_score(trust_pilot_rating: float = 0, bbb_rating: str = "", has_warranty: bool = True) -> float:
-    """
-    Convert vendor trust signals to a 0-100 score.
-    
-    Args:
-        trust_pilot_rating: Trustpilot score (0-5)
-        bbb_rating: BBB grade (A+, A, A-, B+, etc.)
-        has_warranty: Whether vendor offers warranty
-        
-    Returns:
-        Score 0-100
-    """
-    score = 50.0  # baseline neutral
-    
+def parse_vendor_score(
+    trust_pilot_rating: float = 0,
+    bbb_rating: str = "",
+    has_warranty: bool = False,
+    sentiment_score: float | None = None,
+    has_return_policy: bool = False,
+) -> float:
+    score = 50.0
     if trust_pilot_rating > 0:
         score += (trust_pilot_rating / 5.0) * 30
-    
+    if sentiment_score is not None:
+        score = score * 0.4 + sentiment_score * 0.6
     bbb_scores = {"A+": 20, "A": 15, "A-": 10, "B+": 5, "B": 0, "B-": -5, "C": -10, "F": -20}
     score += bbb_scores.get(bbb_rating.upper(), 0)
-    
     if has_warranty:
         score += 10
-    
+    if has_return_policy:
+        score += 10
     return max(0.0, min(100.0, score))
 
 
-# ── Pretty-print helpers ────────────────────────────────────────────
+# ── Pretty-print helpers ─────────────────────────────────────
 
-def format_score_table(scores: list[ProductScore]) -> str:
-    """
-    Format a list of scored products as a human-readable table.
-    """
+def _labels_for_preset(preset: Optional[str]) -> dict[str, str]:
+    return get_preset_labels(preset) if preset else DIM_LABELS
+
+
+def format_score_table(scores: list[ProductScore], preset: Optional[str] = None) -> str:
     if not scores:
         return "No products scored."
 
-    header = (
-        f"{'Rank':<5} {'Product':<30} {'Vendor':<18} {'Score':>7}  "
-        f"{'Price':>6} {'Quality':>7} {'Ship':>6} {'Trust':>6}"
-    )
+    labels = _labels_for_preset(preset)
+    dim_keys = list(labels.keys())
+
+    header_parts = [f"{'Rank':<5} {'Product':<30} {'Vendor':<18} {'Score':>7}"]
+    for k in dim_keys[:4]:
+        short = labels[k][:6]
+        header_parts.append(f" {short:>6}")
+    header = " ".join(header_parts)
     sep = "─" * len(header)
-    
+
     lines = [header, sep]
     for ps in scores:
         dim_map = {d.name: d.score for d in ps.dimensions}
-        lines.append(
-            f"{ps.rank_in_batch:<5} "
-            f"{ps.product_name[:28]:<30} "
-            f"{ps.vendor[:16]:<18} "
-            f"{ps.total_weighted_score:>6.1f}  "
-            f"{dim_map.get('price', 0):>5.0f} "
-            f"{dim_map.get('quality', 0):>6.0f} "
-            f"{dim_map.get('shipping_speed', 0):>5.0f} "
-            f"{dim_map.get('vendor_reputation', 0):>5.0f}"
-        )
-    
+        row = f"{ps.rank_in_batch:<5} {ps.product_name[:28]:<30} {ps.vendor[:16]:<18} {ps.total_weighted_score:>6.1f}"
+        for k in dim_keys[:4]:
+            row += f" {dim_map.get(k, 0):>5.0f}"
+        lines.append(row)
+
     lines.append(sep)
     return "\n".join(lines)
 
 
-def format_dimension_breakdown(ps: ProductScore) -> str:
-    """
-    Format a detailed breakdown for a single product.
-    """
+def format_dimension_breakdown(ps: ProductScore, preset: Optional[str] = None) -> str:
+    labels = _labels_for_preset(preset)
     lines = [
         f"  {ps.product_name} ({ps.vendor})",
         f"  Total Score: {ps.total_weighted_score:.1f}/100  "
@@ -349,13 +349,15 @@ def format_dimension_breakdown(ps: ProductScore) -> str:
     if ps.url:
         lines.append(f"  URL: {ps.url}")
     lines.append("")
-    
+
     for d in ps.dimensions:
-        bar_len = int(d.score / 5)  # 20 bars max
+        if d.weight == 0:
+            continue
+        bar_len = int(d.score / 5)
         bar = "█" * bar_len + "░" * (20 - bar_len)
-        label = DIM_LABELS.get(d.name, d.name)
+        label = labels.get(d.name, d.name)
         lines.append(f"  {label:<28} [{bar}] {d.score:>5.1f} ({d.weighted_score:.1f})")
         if d.rationale:
             lines.append(f"    → {d.rationale}")
-    
+
     return "\n".join(lines)

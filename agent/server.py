@@ -18,7 +18,6 @@ import json
 from pathlib import Path
 from contextlib import asynccontextmanager
 
-# Ensure agent modules are importable
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from fastapi import FastAPI, HTTPException
@@ -32,9 +31,9 @@ from pydantic import BaseModel
 # ---------------------------------------------------------------------------
 
 class CompareRequest(BaseModel):
-    """User submits a product query."""
     query: str
-
+    rubric: str | None = None
+    reference_vendor: str | None = None
 
 class CompareResponse(BaseModel):
     status: str
@@ -44,27 +43,41 @@ class CompareResponse(BaseModel):
     products_found: int = 0
     scores: list[dict] | None = None
     savings: dict | None = None
+    rubric: str | None = None
+    rubric_label: str | None = None
     error: str | None = None
-
 
 class HealthResponse(BaseModel):
     status: str
     version: str = "0.1.0"
 
+class SettingsResponse(BaseModel):
+    rubric: str
+    rubric_label: str
+    custom_weights: dict | None
+    available_rubrics: list[dict]
+
+class SettingsUpdateRequest(BaseModel):
+    rubric: str | None = None
+    custom_weights: dict | None = None
+
+class RubricsListResponse(BaseModel):
+    rubrics: list[dict]
+
 
 # ---------------------------------------------------------------------------
-# Import the pipeline (only when server starts)
+# Import the pipeline
 # ---------------------------------------------------------------------------
 
 from run import fetch_products, score_from_raw
-from scorer import score_batch
+from scorer import score_batch, get_preset, get_preset_labels, RUBRIC_PRESETS
 from report_generator import generate_report
+from settings import load_settings, save_settings, get_active_rubric
 
 
 REPORTS_DIR = Path(__file__).parent / "reports"
 REPORTS_DIR.mkdir(exist_ok=True)
 
-# Static path for serving reports via HTTP
 STATIC_REPORTS_DIR = Path(__file__).parent / "static_reports"
 STATIC_REPORTS_DIR.mkdir(exist_ok=True)
 
@@ -75,21 +88,19 @@ STATIC_REPORTS_DIR.mkdir(exist_ok=True)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Start the background runner loop."""
     yield
 
 
 app = FastAPI(
     title="Sparrow Agent",
     description="Local-first AI expense reduction agent API",
-    version="0.1.0",
+    version="0.2.0",
     lifespan=lifespan,
 )
 
-# Allow the Tauri frontend (running on a different port) to call this API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Tauri dev server runs on localhost:1420
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -102,24 +113,83 @@ app.add_middleware(
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
-    """Health check — Tauri frontend calls this to verify the agent is running."""
-    return {"status": "ok"}
+    return {"status": "ok", "version": "0.2.0"}
+
+
+@app.get("/rubrics", response_model=RubricsListResponse)
+async def list_rubrics():
+    rubrics = []
+    for key, preset in RUBRIC_PRESETS.items():
+        rubrics.append({
+            "id": key,
+            "label": preset["label"],
+            "description": preset["description"],
+            "dimensions": [
+                {"key": k, "label": v["label"], "weight": v["weight"]}
+                for k, v in preset["dimensions"]
+            ],
+        })
+    return {"rubrics": rubrics}
+
+
+@app.get("/settings", response_model=SettingsResponse)
+async def get_settings():
+    s = load_settings()
+    rubric = s.get("rubric", "consumer")
+    preset = get_preset(rubric)
+    rubrics_list = []
+    for key, p in RUBRIC_PRESETS.items():
+        rubrics_list.append({
+            "id": key,
+            "label": p["label"],
+            "description": p["description"],
+        })
+    return SettingsResponse(
+        rubric=rubric,
+        rubric_label=preset["label"],
+        custom_weights=s.get("custom_weights"),
+        available_rubrics=rubrics_list,
+    )
+
+
+@app.put("/settings", response_model=SettingsResponse)
+async def update_settings(req: SettingsUpdateRequest):
+    updates = {}
+    if req.rubric is not None:
+        updates["rubric"] = req.rubric
+    if req.custom_weights is not None:
+        updates["custom_weights"] = req.custom_weights
+    try:
+        saved = save_settings(updates)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    rubric = saved.get("rubric", "consumer")
+    preset = get_preset(rubric)
+    rubrics_list = []
+    for key, p in RUBRIC_PRESETS.items():
+        rubrics_list.append({"id": key, "label": p["label"], "description": p["description"]})
+    return SettingsResponse(
+        rubric=rubric,
+        rubric_label=preset["label"],
+        custom_weights=saved.get("custom_weights"),
+        available_rubrics=rubrics_list,
+    )
 
 
 @app.post("/compare", response_model=CompareResponse)
 async def compare_products(req: CompareRequest):
-    """
-    Run the full pipeline: search → score → report.
-    
-    This is the main endpoint. The Tauri frontend sends a product query
-    here and receives a comparison report in return.
-    """
     query = req.query.strip()
     if not query:
         raise HTTPException(status_code=400, detail="Query cannot be empty")
 
+    rubric = req.rubric or get_active_rubric()
+    if rubric not in RUBRIC_PRESETS:
+        raise HTTPException(status_code=400, detail=f"Unknown rubric '{rubric}'")
+
+    preset_def = get_preset(rubric)
+    preset_label = preset_def["label"]
+
     try:
-        # Step 1: Fetch products via Brave Search
         raw_products = fetch_products(query)
         products_found = len(raw_products)
 
@@ -127,14 +197,28 @@ async def compare_products(req: CompareRequest):
             return CompareResponse(
                 status="no_results",
                 query=query,
+                rubric=rubric,
+                rubric_label=preset_label,
                 error=f"No products found for '{query}'. Try a different query.",
             )
 
-        # Step 2: Score products
-        scored_inputs = score_from_raw(raw_products)
-        scored = score_batch(scored_inputs)
+        scored_inputs = score_from_raw(raw_products, preset=rubric)
+        settings = load_settings()
+        custom_weights = settings.get("custom_weights")
+        weights = custom_weights if custom_weights else None
 
-        # Step 3: Calculate savings
+        if req.reference_vendor:
+            ref = next(
+                (p for p in scored_inputs if p["vendor"].lower() == req.reference_vendor.lower()),
+                None,
+            )
+            if ref:
+                ref_scores = ref.get("scores", {})
+                for p in scored_inputs:
+                    p["reference_scores"] = ref_scores
+
+        scored = score_batch(scored_inputs, weights=weights)
+
         prices = [
             p.get("metadata", {}).get("price", 0)
             for p in scored_inputs
@@ -154,24 +238,21 @@ async def compare_products(req: CompareRequest):
         else:
             savings_data = {"annual_savings": "?", "fee": "?", "net_benefit": "?"}
 
-        # Step 4: Generate HTML report
         report_html = generate_report(
             scored=scored,
             product_query=query,
             savings_data=savings_data,
+            preset=rubric,
         )
 
-        # Save report
-        safe_name = query.replace(" ", "_").lower()[:40]
+        safe_name = f"{query}_{rubric}".replace(" ", "_").lower()[:50]
         report_filename = f"report_{safe_name}.html"
         report_path = REPORTS_DIR / report_filename
         report_path.write_text(report_html)
 
-        # Also copy to static_reports for HTTP serving
         static_path = STATIC_REPORTS_DIR / report_filename
         static_path.write_text(report_html)
 
-        # Build scores list for the frontend
         scores_list = []
         for ps in scored:
             dim_map = {d.name: d.score for d in ps.dimensions}
@@ -180,6 +261,8 @@ async def compare_products(req: CompareRequest):
                 "vendor": ps.vendor,
                 "product_name": ps.product_name,
                 "total_score": round(ps.total_weighted_score, 1),
+                "confidence": round(ps.confidence, 2),
+                "data_quality": ps.data_quality,
                 "dimensions": dim_map,
                 "url": ps.url,
             })
@@ -187,6 +270,8 @@ async def compare_products(req: CompareRequest):
         return CompareResponse(
             status="success",
             query=query,
+            rubric=rubric,
+            rubric_label=preset_label,
             report_path=str(static_path),
             report_url=f"/reports/{report_filename}",
             products_found=products_found,
@@ -200,7 +285,6 @@ async def compare_products(req: CompareRequest):
 
 @app.get("/reports/{filename}")
 async def serve_report(filename: str):
-    """Serve a generated HTML report file."""
     report_file = STATIC_REPORTS_DIR / filename
     if not report_file.exists():
         raise HTTPException(status_code=404, detail="Report not found")
@@ -213,9 +297,12 @@ async def serve_report(filename: str):
 
 if __name__ == "__main__":
     import uvicorn
-    print("🐦 Sparrow Agent HTTP Server starting...")
+    print("🐦 Sparrow Agent HTTP Server v0.2.0 starting...")
     print("   Endpoint: http://127.0.0.1:8765")
     print("   Compare:  POST /compare  {\"query\": \"HP 64A toner\"}")
+    print("   Settings: GET  /settings")
+    print("   Settings: PUT  /settings  {\"rubric\": \"business\"}")
+    print("   Rubrics:  GET  /rubrics")
     print("   Health:   GET  /health")
     print("   Reports:  GET  /reports/<filename>")
     print()

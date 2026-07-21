@@ -1,8 +1,3 @@
-"""
-Product comparison report generator.
-Takes scored ProductScore objects and produces a styled HTML report.
-Supports dynamic rubric presets for dimension labels.
-"""
 from __future__ import annotations
 import json
 import io
@@ -44,14 +39,43 @@ body {
     background: var(--slate-100);
     color: var(--navy);
     line-height: 1.6;
-    padding: 2rem 1rem;
+    padding: 0;
+}
+
+.sticky-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--navy);
+    color: var(--white);
+    padding: 0.6rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.sticky-nav .nav-brand {
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+.sticky-nav .nav-brand span {
+    color: var(--accent-light);
+}
+.sticky-nav .nav-meta {
+    display: flex;
+    gap: 1.5rem;
+    color: var(--slate-300);
+}
+.sticky-nav .nav-meta strong {
+    color: var(--white);
 }
 
 .report-container {
     max-width: 860px;
     margin: 0 auto;
     background: var(--white);
-    border-radius: var(--radius);
+    border-radius: 0 0 var(--radius) var(--radius);
     box-shadow: var(--shadow-md);
     overflow: hidden;
 }
@@ -88,6 +112,51 @@ body {
 }
 .hero .meta span strong {
     color: var(--white);
+}
+
+.hero-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+}
+.btn-invoke {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1.5rem;
+    background: var(--accent);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+    text-decoration: none;
+}
+.btn-invoke:hover {
+    background: #047857;
+}
+.btn-reject {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1.5rem;
+    background: transparent;
+    color: var(--slate-300);
+    border: 1px solid var(--slate-500);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+.btn-reject:hover {
+    border-color: var(--danger);
+    color: var(--danger);
 }
 
 .section {
@@ -156,10 +225,16 @@ body {
 
 .dim-row {
     display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    font-size: 0.85rem;
+}
+.dim-top {
+    display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.4rem 0;
-    font-size: 0.85rem;
+    width: 100%;
 }
 .dim-label {
     flex: 0 0 180px;
@@ -184,10 +259,18 @@ body {
     font-weight: 600;
     font-size: 0.8rem;
 }
+.dim-rationale {
+    margin: 0.15rem 0 0 180px;
+    font-size: 0.78rem;
+    color: var(--slate-500);
+    font-style: italic;
+    padding-left: 0.75rem;
+    border-left: 2px solid var(--slate-200);
+}
 
 .scenarios {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
 }
 .scenario-card {
@@ -317,6 +400,98 @@ body {
     color: var(--slate-600);
 }
 
+.collapsible-header {
+    cursor: pointer;
+    user-select: none;
+}
+.collapsible-header::before {
+    content: "\u25be ";
+    font-size: 0.8rem;
+    transition: transform 0.2s;
+}
+.collapsible-header.collapsed::before {
+    content: "\u25b8 ";
+}
+.collapsible-body {
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+.collapsible-body.collapsed {
+    max-height: 0 !important;
+}
+
+.toggle-bar {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+.toggle-btn {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    border: 1px solid var(--slate-300);
+    border-radius: 20px;
+    background: var(--white);
+    color: var(--slate-600);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.toggle-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.toggle-btn.active {
+    background: var(--accent);
+    color: var(--white);
+    border-color: var(--accent);
+}
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+.modal-overlay.open {
+    display: flex;
+}
+.modal-content {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    max-width: 540px;
+    width: 90%;
+    padding: 1.5rem;
+}
+.modal-content h3 {
+    margin-bottom: 0.5rem;
+}
+.modal-content textarea {
+    width: 100%;
+    min-height: 140px;
+    border: 1px solid var(--slate-300);
+    border-radius: var(--radius);
+    padding: 0.75rem;
+    font-family: system-ui, sans-serif;
+    font-size: 0.85rem;
+    resize: vertical;
+    margin: 0.75rem 0;
+}
+.modal-close {
+    background: var(--slate-100);
+    border: none;
+    border-radius: var(--radius);
+    padding: 0.4rem 1rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+.modal-close:hover {
+    background: var(--slate-200);
+}
+
 .footer {
     background: var(--slate-50);
     padding: 1rem 2rem;
@@ -329,7 +504,8 @@ body {
 @media print {
     body { background: white; padding: 0; }
     .report-container { box-shadow: none; }
-    .hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .sticky-nav { position: static; }
+    .toggle-bar, .collapsible-header::before, .modal-overlay, .hero-actions { display: none; }
 }
 """
 
@@ -350,6 +526,14 @@ def _bar_color(score: float) -> str:
     return "var(--danger)"
 
 
+def _score_to_color_hex(score: float) -> str:
+    if score >= 75:
+        return "#059669"
+    elif score >= 50:
+        return "#d97706"
+    return "#dc2626"
+
+
 def _render_dimensions(ps: ProductScore, labels: dict[str, str], dim_averages: Optional[dict[str, float]] = None) -> str:
     parts = []
     for d in ps.dimensions:
@@ -359,25 +543,34 @@ def _render_dimensions(ps: ProductScore, labels: dict[str, str], dim_averages: O
         color = _bar_color(d.score)
         pct = max(2, int(d.score))
         has_data = ps.data_quality.get(d.name, False)
-        dot = '<span style="color:var(--accent);font-size:1.1rem;">●</span>' if has_data else '<span style="color:var(--slate-300);font-size:1.1rem;">○</span>'
+        dot = '<span style="color:var(--accent);font-size:1.1rem;">\u25cf</span>' if has_data else '<span style="color:var(--slate-300);font-size:1.1rem;">\u25cb</span>'
 
         insight = ""
         if dim_averages and d.name in dim_averages:
             avg = dim_averages[d.name]
             if d.score >= avg + 10:
-                insight = '<span style="font-size:0.75rem;color:var(--accent);margin-left:0.5rem;">↑ Above avg</span>'
+                insight = '<span style="font-size:0.75rem;color:var(--accent);margin-left:0.5rem;">\u2191 Above avg</span>'
             elif d.score <= avg - 10:
-                insight = '<span style="font-size:0.75rem;color:var(--danger);margin-left:0.5rem;">↓ Below avg</span>'
+                insight = '<span style="font-size:0.75rem;color:var(--danger);margin-left:0.5rem;">\u2193 Below avg</span>'
             else:
-                insight = '<span style="font-size:0.75rem;color:var(--slate-400);margin-left:0.5rem;">— At avg</span>'
+                insight = '<span style="font-size:0.75rem;color:var(--slate-400);margin-left:0.5rem;">\u2014 At avg</span>'
+
+        rationale_html = ""
+        if d.rationale:
+            rationale_html = f'<div class="dim-rationale">{d.rationale}</div>'
 
         parts.append(f"""
         <div class="dim-row">
-            <span class="dim-label">{dot} {label}{insight}</span>
-            <div class="dim-bar-bg">
-                <div class="dim-bar-fill" style="width:{pct}%;background:{color};"></div>
+            <div style="width:100%;">
+                <div class="dim-top">
+                    <span class="dim-label">{dot} {label}{insight}</span>
+                    <div class="dim-bar-bg">
+                        <div class="dim-bar-fill" style="width:{pct}%;background:{color};"></div>
+                    </div>
+                    <span class="dim-score">{d.score:.0f}</span>
+                </div>
+                {rationale_html}
             </div>
-            <span class="dim-score">{d.score:.0f}</span>
         </div>""")
     return "\n".join(parts)
 
@@ -391,7 +584,7 @@ def _render_comparison_table(scored: list[ProductScore]) -> str:
     rows = []
     for ps in scored:
         is_best = ps.rank_in_batch == 1
-        badge = '<span class="badge badge-best">★ Recommended</span>' if is_best else ''
+        badge = '<span class="badge badge-best">\u2605 Recommended</span>' if is_best else ''
         if ps.is_secondhand:
             badge += ' <span class="badge badge-secondhand">Refurb</span>'
 
@@ -402,18 +595,19 @@ def _render_comparison_table(scored: list[ProductScore]) -> str:
 
         if isinstance(price, (int, float)) and baseline:
             annual_savings = (baseline - price) * 4
-            savings_cell = f'<span class="savings-positive">${annual_savings:.0f}</span>' if annual_savings > 0 else '<span class="savings-neutral">—</span>'
+            savings_cell = f'<span class="savings-positive">${annual_savings:.0f}</span>' if annual_savings > 0 else '<span class="savings-neutral">\u2014</span>'
         else:
-            savings_cell = '<span class="savings-neutral">—</span>'
+            savings_cell = '<span class="savings-neutral">\u2014</span>'
 
+        sh_attr = ' data-secondhand="true"' if ps.is_secondhand else ''
         rows.append(f"""
-        <tr class="{'best' if is_best else ''}">
+        <tr class="{'best' if is_best else ''}"{sh_attr}>
             <td>{ps.rank_in_batch}</td>
             <td><strong>{ps.product_name}</strong><br><small style="color:var(--slate-500)">{ps.vendor}</small>{badge}</td>
             <td class="price-cell">${price}</td>
-            <td class="score-cell {score_cls}">{ps.total_weighted_score:.0f}</td>
-            <td class="score-cell">{dim_map.get('quality', 0):.0f}</td>
-            <td>{shipping}d</td>
+            <td class="score-cell {score_cls}" title="Score: {ps.total_weighted_score:.0f}/100">{ps.total_weighted_score:.0f}</td>
+            <td class="score-cell" title="Quality score">{dim_map.get('quality', 0):.0f}</td>
+            <td title="Shipping: {shipping}d">{shipping}d</td>
             <td class="price-cell">{savings_cell}</td>
         </tr>""")
 
@@ -434,6 +628,31 @@ def _render_comparison_table(scored: list[ProductScore]) -> str:
     </table>"""
 
 
+def _render_sticky_header(scored: list[ProductScore], preset_label: str, now: str) -> str:
+    best = scored[0] if scored else None
+    if not best:
+        return ""
+    confidence_pct = best.confidence * 100
+    return f"""
+    <div class="sticky-nav">
+        <div class="nav-brand">Sparrow <span>CFO</span></div>
+        <div class="nav-meta">
+            <span><strong>{best.product_name}</strong> \u2014 {best.vendor}</span>
+            <span>Score: <strong>{best.total_weighted_score:.0f}</strong></span>
+            <span>Confidence: <strong>{confidence_pct:.0f}%</strong></span>
+            <span>{preset_label} Rubric</span>
+        </div>
+    </div>"""
+
+
+def _render_actions() -> str:
+    return """
+    <div class="hero-actions">
+        <button class="btn-invoke" data-action="invoke">\u2713 Invoke \u2014 Switch to Recommended</button>
+        <button class="btn-reject" data-action="reject">\u2717 Reject \u2014 Stay with Current</button>
+    </div>"""
+
+
 def generate_report(
     scored: list[ProductScore],
     product_query: str,
@@ -450,12 +669,13 @@ def generate_report(
 
     best = scored[0] if scored else None
 
+    # ── Hero ──────────────────────────────────────────────────
     savings_html = ""
     fee_html = ""
     if savings_data:
-        annual = savings_data.get('annual_savings', '—')
-        fee = savings_data.get('fee', '—')
-        net = savings_data.get('net_benefit', '—')
+        annual = savings_data.get('annual_savings', '\u2014')
+        fee = savings_data.get('fee', '\u2014')
+        net = savings_data.get('net_benefit', '\u2014')
         savings_html = f"""
         <div class="savings">${annual}</div>
         <div style="font-size:0.85rem;color:var(--slate-300);margin-top:0.25rem;">
@@ -495,8 +715,10 @@ def generate_report(
         risk_label = "High Risk"
         risk_dot = "red"
 
+    # ── Section 2: Comparison Table ──────────────────────────
     comp_html = _render_comparison_table(scored)
 
+    # ── Section 3: Dimension Breakdown ────────────────────────
     dim_averages: dict[str, float] = {}
     if scored:
         for idx, d in enumerate(scored[0].dimensions):
@@ -508,18 +730,22 @@ def generate_report(
                 dim_averages[d.name] = sum(vals) / len(vals)
 
     dim_htmls = []
-    for ps in scored:
+    for i, ps in enumerate(scored):
+        secondhand_attr = ' data-secondhand="true"' if ps.is_secondhand else ''
         dim_htmls.append(
-            f"<h3 style='font-size:0.95rem;margin:1rem 0 0.5rem;'>"
-            f"{ps.product_name} — {ps.vendor} "
-            f"<span style='float:right;color:var(--accent);font-family:monospace;font-weight:700;'>"
-            f"{ps.total_weighted_score:.0f}/100</span></h3>"
+            f'<div class="product-dims" data-product-index="{i}"{secondhand_attr}>'
+            f'<h3 class="collapsible-header" data-action="toggle-collapse" '
+            f'title="Click to expand/collapse dimensions">'
+            f'{ps.product_name} \u2014 {ps.vendor} '
+            f'<span style="float:right;color:var(--accent);font-family:monospace;font-weight:700;">'
+            f'{ps.total_weighted_score:.0f}/100</span></h3>'
         )
+        dim_htmls.append('<div class="collapsible-body">')
         dim_htmls.append(_render_dimensions(ps, labels, dim_averages))
         dq_count = sum(1 for v in ps.data_quality.values() if v)
         dim_htmls.append(
             f'<div style="font-size:0.75rem;color:var(--slate-400);text-align:right;">'
-            f'● = data-backed &nbsp;○ = default &nbsp;|&nbsp; '
+            f'\u25cf = data-backed \u00a0\u25cb = default \u00a0|\u00a0 '
             f'<strong>{dq_count}/{len(ps.dimensions)}</strong> dimensions with data'
             f'</div>'
         )
@@ -532,67 +758,59 @@ def generate_report(
         if ps.is_secondhand:
             dim_htmls.append(
                 '<small style="color:var(--warning);">'
-                '⚠ Secondhand item — quality and warranty penalties applied</small>'
+                '\u26a0 Secondhand item \u2014 quality and warranty penalties applied</small>'
             )
+        dim_htmls.append('</div></div>')
     dim_section = "\n".join(dim_htmls)
 
+    # ── Section 4: What-If Scenarios ─────────────────────────
     scenario_html = _render_scenarios(scored)
     validation_html = _render_validation_section(validation)
     ai_judge_html = _render_ai_judge_section(ai_validation)
+    # ── Section 5: Secondhand ────────────────────────────────
     secondhand_html = _render_secondhand_section(scored)
+    # ── Section 6: Sources ───────────────────────────────────
     source_html = _render_sources(scored)
+    # ── Section 7: Edge Case ─────────────────────────────────
+    edge_case_html = _render_edge_case(scored, product_query)
 
-    edge_case_html = ""
-    if scored and scored[0].total_weighted_score < 65:
-        edge_case_html = f"""
-        <div class="section" style="background:rgba(220,38,38,0.05);border-left:4px solid var(--danger);">
-            <h2><span class="icon">⚠️</span> No Strong Alternative Found</h2>
-            <p style="font-size:0.9rem;color:var(--slate-600);">
-                None of the available alternatives scored above 65/100. Consider:
-            </p>
-            <ul style="font-size:0.85rem;color:var(--slate-600);padding-left:1.2rem;margin-top:0.5rem;">
-                <li><strong>Negotiate</strong> with your current vendor for better pricing</li>
-                <li><strong>Wait</strong> for seasonal price drops (typically Q4)</li>
-                <li><strong>Expand search</strong> to include refurbished or auction options</li>
-            </ul>
-        </div>"""
+    # Sticky nav
+    sticky_html = _render_sticky_header(scored, preset_label, now)
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sparrow Report — {product_query}</title>
+<title>Sparrow CFO Pro Buyer \u2014 {product_query}</title>
 <style>{CSS}</style>
 </head>
 <body>
+{sticky_html}
 <div class="report-container">
 
-    <div class="hero">
-        <h1>💡 Savings Opportunity Identified</h1>
-        {rec_html}
-        {savings_html}
-        {fee_html}
-        <div class="meta">
-            <span><strong>Confidence:</strong> {confidence_pct:.0f}%</span>
-            <span><strong>Risk:</strong> <span class="traffic-light"><span class="dot {risk_dot}"></span>{risk_label}</span></span>
-            <span><strong>Search:</strong> {now[:19]}</span>
-            <span><strong>Options:</strong> {len(scored)}</span>
-        </div>
-    </div>
+    {_render_hero(product_query, rec_html, savings_html, fee_html, confidence_pct, risk_dot, risk_label, now, scored)}
+
+    {_render_actions()}
 
     <div class="section">
-        <h2><span class="icon">📊</span> Comparison Overview</h2>
+        <h2><span class="icon">\U0001f4ca</span> \u00a72 \u2014 Comparison Table</h2>
+        <div class="toggle-bar">
+            <button class="toggle-btn active" data-action="toggle-new-only" id="new-only-btn">\U0001f331 New Items Only</button>
+            <button class="toggle-btn" data-action="expand-all-dims" id="expand-all-btn">\u25bc Expand All Dimensions</button>
+        </div>
         {comp_html}
     </div>
 
     <div class="section">
-        <h2><span class="icon">🔍</span> Dimension Breakdown <span style="font-size:0.7rem;color:var(--slate-400);font-weight:400;">({preset_label} rubric)</span></h2>
+        <h2><span class="icon">\U0001f50d</span> \u00a73 \u2014 Dimension Breakdown <span style="font-size:0.7rem;color:var(--slate-400);font-weight:400;">({preset_label} rubric)</span></h2>
+        <p style="font-size:0.85rem;color:var(--slate-500);margin-bottom:0.75rem;">Each dimension scored 0\u2013100. \u25cf = data-backed, \u25cb = default value. Hover or expand for details.</p>
         {dim_section}
     </div>
 
     <div class="section">
-        <h2><span class="icon">🎯</span> What-If Scenarios</h2>
+        <h2><span class="icon">\U0001f3af</span> \u00a74 \u2014 What-If Scenarios</h2>
+        <p style="font-size:0.85rem;color:var(--slate-500);margin-bottom:0.75rem;">How different priorities change the recommendation.</p>
         {scenario_html}
     </div>
 
@@ -605,19 +823,114 @@ def generate_report(
     {edge_case_html}
 
     <div class="section">
-        <h2><span class="icon">📎</span> Sources & Provenance</h2>
+        <h2><span class="icon">\U0001f4ce</span> \u00a76 \u2014 Sources &amp; Provenance</h2>
+        <p style="font-size:0.85rem;color:var(--slate-500);margin-bottom:0.75rem;">Timestamps, confidence levels, and provenance for each data point.</p>
         {source_html}
     </div>
 
     <div class="footer">
-        Generated by Sparrow AI · {preset_label} Rubric · Product Comparison Report · {now[:19]} UTC<br>
-        Scores based on 8-dimension rubric · Data refreshed at time of search
+        Generated by Sparrow AI \u00b7 {preset_label} Rubric \u00b7 CFO Pro Buyer Report \u00b7 {now[:19]} UTC<br>
+        Scores based on 8-dimension rubric \u00b7 Data refreshed at time of search
     </div>
 
 </div>
+
+<script>
+document.addEventListener('click', function(e) {{
+    var el = e.target;
+    var action = el.getAttribute('data-action');
+    if (!action) return;
+
+    function findParent(el, tag) {{
+        tag = tag.toUpperCase();
+        while (el && el.tagName !== tag) el = el.parentElement;
+        return el;
+    }}
+
+    var fn = {{
+        'toggle-collapse': function() {{
+            el.classList.toggle('collapsed');
+            var body = el.nextElementSibling;
+            if (!body) return;
+            body.classList.toggle('collapsed');
+            if (body.style.maxHeight) body.style.maxHeight = null;
+            else body.style.maxHeight = body.scrollHeight + 'px';
+        }},
+        'toggle-new-only': function() {{
+            var btn = el;
+            var showingNew = btn.classList.toggle('active');
+            btn.textContent = showingNew ? '\U0001f331 New Items Only' : '\U0001f4e6 Show All Items';
+            var sel = '[data-secondhand="true"]';
+            document.querySelectorAll('.comp-table ' + sel + ', .product-dims' + sel).forEach(function(el) {{
+                el.style.display = showingNew ? 'none' : '';
+            }});
+            document.querySelectorAll('.secondhand-item').forEach(function(el) {{
+                el.closest('.section').style.display = showingNew ? 'none' : '';
+            }});
+        }},
+        'expand-all-dims': function() {{
+            document.querySelectorAll('.collapsible-body.collapsed').forEach(function(body) {{
+                body.classList.remove('collapsed');
+                body.style.maxHeight = body.scrollHeight + 'px';
+                var hdr = body.previousElementSibling;
+                if (hdr) hdr.classList.remove('collapsed');
+            }});
+        }},
+        'open-negotiate': function() {{
+            document.getElementById('negotiate-modal').classList.add('open');
+        }},
+        'close-negotiate': function() {{
+            document.getElementById('negotiate-modal').classList.remove('open');
+        }},
+        'copy-email': function() {{
+            var ta = document.getElementById('negotiate-email');
+            ta.select();
+            navigator.clipboard.writeText(ta.value);
+            var orig = el.textContent;
+            el.textContent = '\u2705 Copied!';
+            setTimeout(function() {{ el.textContent = orig; }}, 2000);
+        }},
+        'invoke': function() {{
+            alert('Invoke action triggered. In a production Tauri app this would open the order workflow.');
+        }},
+        'reject': function() {{
+            alert('Reject action triggered. In a production Tauri app this would log feedback.');
+        }},
+    }}[action];
+    if (fn) fn();
+}});
+
+document.addEventListener('DOMContentLoaded', function() {{
+    document.querySelectorAll('.collapsible-body').forEach(function(body) {{
+        body.style.maxHeight = body.scrollHeight + 'px';
+    }});
+}});
+
+document.getElementById('negotiate-modal').addEventListener('click', function(e) {{
+    if (e.target === this) this.classList.remove('open');
+}});
+</script>
 </body>
 </html>"""
     return html
+
+
+def _render_hero(product_query: str, rec_html: str, savings_html: str, fee_html: str,
+                 confidence_pct: float, risk_dot: str, risk_label: str,
+                 now: str, scored: list[ProductScore]) -> str:
+    return f"""
+    <div class="hero">
+        <h1>\U0001f4a1 Savings Opportunity Identified</h1>
+        {rec_html}
+        {savings_html}
+        {fee_html}
+        <div class="meta">
+            <span><strong>Confidence:</strong> {confidence_pct:.0f}%</span>
+            <span><strong>Risk:</strong> <span class="traffic-light"><span class="dot {risk_dot}"></span>{risk_label}</span></span>
+            <span><strong>Search:</strong> {now[:19]}</span>
+            <span><strong>Options:</strong> {len(scored)}</span>
+        </div>
+    </div>"""
 
 
 def _render_scenarios(scored: list[ProductScore]) -> str:
@@ -647,19 +960,32 @@ def _render_scenarios(scored: list[ProductScore]) -> str:
         return 0
     balance_winner = max(scored, key=score_to_price_ratio)
 
+    def bulk_price_key(ps):
+        p = ps.metadata.get("price")
+        if isinstance(p, (int, float)):
+            free_shipping = ps.metadata.get("free_shipping", False)
+            bulk_p = p * 0.9
+            if free_shipping:
+                return bulk_p
+            return bulk_p + (ps.metadata.get("shipping_cost") or 5.0)
+        return float("inf")
+    bulk_winner = min(scored, key=bulk_price_key)
+
     cards = []
     scenarios = [
-        ("Prioritize Price", price_winner, "Lowest total landed cost"),
-        ("Prioritize Quality", quality_winner, "Highest quality/reliability score"),
-        ("Need It Fastest", fastest_winner, f"Estimated {fastest_winner.metadata.get('shipping_days', '?')} day delivery"),
-        ("Best Balance", balance_winner, "Best score-to-price ratio"),
+        ("\U0001f4b0 Prioritize Price", price_winner, "Lowest total landed cost"),
+        ("\u2b50 Prioritize Quality", quality_winner, "Highest quality/reliability score"),
+        ("\U0001f698 Need It Fastest", fastest_winner, f"Estimated {fastest_winner.metadata.get('shipping_days', '?')} day delivery"),
+        ("\u2696\ufe0f Best Balance", balance_winner, "Best score-to-price ratio"),
+        ("\U0001f4e6 Buy in Bulk", bulk_winner,
+         f"10% volume discount + logistics — estimated {bulk_winner.metadata.get('price', '?')} per unit"),
     ]
 
     for title, winner, why in scenarios:
         cards.append(f"""
         <div class="scenario-card">
             <h3>{title}</h3>
-            <div class="pick">{winner.product_name} — {winner.vendor}</div>
+            <div class="pick">{winner.product_name} \u2014 {winner.vendor}</div>
             <div class="why">{why} (Score: {winner.total_weighted_score:.0f})</div>
         </div>""")
 
@@ -684,8 +1010,8 @@ def _render_validation_section(
 
     rows = []
     for f in all_flags:
-        icon = {"info": "ℹ️", "warning": "⚠️", "error": "🚫"}.get(f.severity, "•")
-        color = {"info": "var(--slate-400)", "warning": "var(--amber)", "error": "var(--danger)"}.get(f.severity, "var(--slate-400)")
+        icon = {"info": "\u2139\ufe0f", "warning": "\u26a0\ufe0f", "error": "\U0001f6ab"}.get(f.severity, "\u2022")
+        color = {"info": "var(--slate-400)", "warning": "var(--warning)", "error": "var(--danger)"}.get(f.severity, "var(--slate-400)")
         rows.append(f"""
         <div style="display:flex;gap:0.5rem;padding:0.4rem 0;border-bottom:1px solid var(--slate-100);font-size:0.85rem;">
             <span>{icon}</span>
@@ -693,14 +1019,14 @@ def _render_validation_section(
                 <strong style="color:{color};">{f.field}</strong>
                 <span style="color:var(--slate-600);margin-left:0.3rem;">{f.message}</span>
                 <div style="font-size:0.8rem;color:var(--slate-400);margin-top:0.15rem;">
-                    {f.product_vendor} — {f.suggestion}
+                    {f.product_vendor} \u2014 {f.suggestion}
                 </div>
             </div>
         </div>""")
 
     return f"""
-    <div class="section" style="background:rgba(245,158,11,0.03);border-left:4px solid var(--amber);">
-        <h2><span class="icon">🛡️</span> Validation &amp; Cross-Check</h2>
+    <div class="section" style="background:rgba(245,158,11,0.03);border-left:4px solid var(--warning);">
+        <h2><span class="icon">\U0001f6e1\ufe0f</span> Validation &amp; Cross-Check</h2>
         <div style="margin-top:0.5rem;">{"".join(rows)}</div>
     </div>"""
 
@@ -723,7 +1049,7 @@ def _render_ai_judge_section(
 
     rows = []
     for f in all_flags:
-        severity_color = {"info": "var(--slate-400)", "warning": "var(--amber)", "error": "var(--danger)"}.get(f.severity, "var(--slate-400)")
+        severity_color = {"info": "var(--slate-400)", "warning": "var(--warning)", "error": "var(--danger)"}.get(f.severity, "var(--slate-400)")
         severity_tag = {"info": "info", "warning": "warning", "error": "error"}.get(f.severity, "info")
         rows.append(f"""
         <div style="display:flex;gap:0.5rem;padding:0.5rem 0;border-bottom:1px solid var(--slate-100);font-size:0.85rem;">
@@ -737,17 +1063,17 @@ def _render_ai_judge_section(
                     <span style="color:var(--slate-600);margin-left:0.3rem;">{f.message}</span>
                 </div>
                 <div style="font-size:0.8rem;color:var(--slate-400);margin-top:0.15rem;">
-                    {f.product_vendor} — {f.suggestion}
+                    {f.product_vendor} \u2014 {f.suggestion}
                 </div>
             </div>
         </div>""")
 
     return f"""
     <div class="section" style="background:rgba(15,23,42,0.03);border-left:4px solid var(--navy);">
-        <h2><span class="icon">🤖</span> AI Judge Analysis</h2>
+        <h2><span class="icon">\U0001f916</span> AI Judge Analysis</h2>
         <p style="font-size:0.8rem;color:var(--slate-400);margin-bottom:0.5rem;">
             LLM-powered cross-check of product scores against raw source text.
-            These flags are probabilistic — verify before acting.
+            These flags are probabilistic \u2014 verify before acting.
         </p>
         <div style="margin-top:0.5rem;">{"".join(rows)}</div>
     </div>"""
@@ -782,9 +1108,9 @@ def _render_secondhand_section(scored: list[ProductScore]) -> str:
             <span class="condition-badge {badge_cls}">{badge_label}</span>
             <div style="flex:1;">
                 <strong>{ps.product_name}</strong>
-                <span style="color:var(--slate-500);font-size:0.85rem;"> — {ps.vendor}</span>
+                <span style="color:var(--slate-500);font-size:0.85rem;"> \u2014 {ps.vendor}</span>
                 <div style="font-size:0.8rem;color:var(--slate-400);margin-top:0.15rem;">
-                    Score: {ps.total_weighted_score:.0f}/100 · {penalty_str}
+                    Score: {ps.total_weighted_score:.0f}/100 \u00b7 {penalty_str}
                 </div>
             </div>
         </div>""")
@@ -793,16 +1119,16 @@ def _render_secondhand_section(scored: list[ProductScore]) -> str:
     if any(ps.metadata.get("secondhand_grade") == "auction" for ps in sh_items):
         risk_warning = """
         <div class="risk-warning">
-            <span style="font-size:1.1rem;">⚠️</span>
+            <span style="font-size:1.1rem;">\u26a0\ufe0f</span>
             <div>
-                <strong>Auction items</strong> — final price not guaranteed. Price shown is estimated.
+                <strong>Auction items</strong> \u2014 final price not guaranteed. Price shown is estimated.
                 Verify seller rating and return policy before purchasing.
             </div>
         </div>"""
 
     return f"""
     <div class="section">
-        <h2><span class="icon">🔄</span> Secondhand &amp; Auction Options</h2>
+        <h2><span class="icon">\U0001f504</span> \u00a75 \u2014 Secondhand &amp; Auction Options</h2>
         <div class="secondhand-list">{"".join(items_html)}</div>
         {risk_warning}
     </div>"""
@@ -812,13 +1138,74 @@ def _render_sources(scored: list[ProductScore]) -> str:
     parts = []
     for i, ps in enumerate(scored, 1):
         source_line = f'<a href="{ps.url}" class="source-link" target="_blank">{ps.url}</a>' if ps.url else "Internal data"
+        confidence_pct = ps.confidence * 100
+        dq_count = sum(1 for v in ps.data_quality.values() if v)
+        total_dims = len(ps.dimensions)
         parts.append(f"""
         <div class="source-item">
             <span class="source-num">{i}.</span>
-            <span><strong>{ps.vendor}</strong> — {source_line}</span>
+            <div style="flex:1;">
+                <div><strong>{ps.vendor}</strong> \u2014 {source_line}</div>
+                <div style="font-size:0.75rem;color:var(--slate-400);margin-top:0.15rem;">
+                    Confidence: {confidence_pct:.0f}% \u00b7 Data coverage: {dq_count}/{total_dims} dimensions
+                </div>
+            </div>
         </div>""")
 
     if not parts:
         return "<p>No sources available.</p>"
 
     return "\n".join(parts)
+
+
+def _render_edge_case(scored: list[ProductScore], product_query: str) -> str:
+    if not scored or scored[0].total_weighted_score >= 65:
+        return ""
+    best_vendor = scored[0].vendor
+    return f"""
+    <div class="section" style="background:rgba(220,38,38,0.05);border-left:4px solid var(--danger);">
+        <h2><span class="icon">\u26a0\ufe0f</span> \u00a77 \u2014 No Strong Alternative Found</h2>
+        <p style="font-size:0.9rem;color:var(--slate-600);">
+            None of the available alternatives scored above 65/100. Consider:
+        </p>
+        <ul style="font-size:0.85rem;color:var(--slate-600);padding-left:1.2rem;margin-top:0.5rem;">
+            <li><strong>Negotiate</strong> with your current vendor for better pricing
+                <button class="toggle-btn" data-action="open-negotiate" style="margin-left:0.5rem;font-size:0.75rem;">\u2709\ufe0f Draft Email</button>
+            </li>
+            <li><strong>Wait</strong> for seasonal price drops (typically Q4)</li>
+            <li><strong>Expand search</strong> to include refurbished or auction options</li>
+        </ul>
+    </div>
+    <div class="modal-overlay" id="negotiate-modal">
+        <div class="modal-content">
+            <h3>\U0001f4dd Negotiation Email Draft</h3>
+            <p style="font-size:0.85rem;color:var(--slate-500);margin-bottom:0.5rem;">
+                Copy this email and send to your current vendor:
+            </p>
+            <textarea id="negotiate-email" readonly>Subject: Pricing Discussion \u2014 {product_query}
+
+Dear {best_vendor} Sales Team,
+
+We are currently evaluating our office supply procurement for {product_query}
+and have identified potential savings by switching vendors.
+
+We value our relationship with {best_vendor} and would prefer to continue
+our partnership, but we need pricing that is competitive with alternatives
+currently available in the market.
+
+Could you please provide your best pricing on {product_query} for a
+volume commitment? We are looking for:
+
+\u2022 Competitive unit pricing
+\u2022 Volume discount tiers
+\u2022 Free shipping options
+\u2022 Extended warranty terms
+
+We look forward to your response.
+
+Best regards,
+[Your Name]</textarea>
+            <button class="modal-close" data-action="copy-email">\U0001f4cb Copy to Clipboard</button>
+            <button class="modal-close" data-action="close-negotiate" style="float:right;">Close</button>
+        </div>
+    </div>"""

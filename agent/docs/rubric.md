@@ -1,150 +1,217 @@
-# The 8-Dimension Rubric — Transparent Product Scoring
+# Sparrow Rubric Documentation
 
 ## Overview
 
-Sparrow evaluates every product using a standardized, transparent rubric across 8 dimensions. Each dimension is scored 0–100 and weighted to produce a total weighted score. The rubric is designed to reflect **total cost of ownership**, not just sticker price.
+Sparrow evaluates every product using a standardized rubric across multiple dimensions. Each dimension is scored 0–100, weighted, and summed to produce a total weighted score. Two presets are available: **Consumer** (8 dimensions, for personal purchasing) and **Business / CFO** (7 dimensions, for procurement decisions).
 
-## Dimension Weights
+An **uncertainty penalty** is applied when data is missing — the confidence score multiplies the total.
 
-| # | Dimension | Weight | Why It Matters |
-|---|-----------|--------|----------------|
-| 1 | **Price** | 25% | The biggest factor in expense reduction |
-| 2 | **Quality** | 20% | Cheap but broken saves nothing |
-| 3 | **Shipping Speed** | 15% | Downtime costs money |
-| 4 | **Trust** | 15% | Vendor reliability prevents costly mistakes |
-| 5 | **Warranty** | 10% | Protection against defects |
-| 6 | **Sustainability** | 5% | Long-term environmental impact |
-| 7 | **Secondhand** | 5% | Refurbished/open-box value |
-| 8 | **Preference** | 5% | Alignment with user priorities |
+---
+
+## Consumer Preset
+
+8 dimensions weighted for personal buying decisions. Balances price and quality with moderate emphasis on shipping speed and vendor trust.
+
+| # | Dimension | Weight |
+|---|-----------|--------|
+| 1 | **Price** | 25% |
+| 2 | **Quality / Reliability** | 20% |
+| 3 | **Shipping Speed** | 15% |
+| 4 | **Vendor Reputation** | 15% |
+| 5 | **Warranty / Service** | 10% |
+| 6 | **Sustainability** | 5% |
+| 7 | **Secondhand Condition** | 5% |
+| 8 | **Preference Alignment** | 5% |
 
 **Total: 100%**
 
----
-
-## Detailed Scoring Algorithms
-
 ### 1. Price (25%)
 
-**Score = 100 − ((vendor_price − min_price) / (max_price − min_price)) × 100**
+**Score = 100 × (1 − (vendor_price − min_price) / (max_price − min_price))**
 
-- Lowest price = 100 (perfect)
-- Highest price = 0 (worst)
-- Linear interpolation between min/max found in results
-- Free shipping adds +5 bonus points
-- Bulk discounts are factored in when available
+- Lowest price in batch = 100
+- Highest price in batch = 0
+- Linear interpolation between min/max
+- If all prices are identical → 100 for all
+- Missing price → 50 (default)
 
-**Example:** If Amazon charges $49.99, CDW $89.99, Staples $64.99:
-- Amazon: 100 (lowest → perfect)
-- Staples: 100 − ((64.99−49.99)/(89.99−49.99)) × 100 = 100 − 37.5 = 62.5
-- CDW: 0 (highest → worst)
+### 2. Quality / Reliability (20%)
 
-### 2. Quality (20%)
+**Score = min(100, (avg_rating / 5.0 × 70) + min(30, 15 × log₁₀(review_count + 1)))**
 
-**Score = (avg_rating / 5.0 × 60) + (min(review_count / 1000, 1) × 40)**
-
-- Average rating contributes 60% of the score
-- Review volume contributes 40% (capped at 1,000 reviews)
-- Missing rating defaults to 50 (neutral)
-
-**Example:** 4.3★ with 1,200 reviews:
-- Rating: (4.3/5.0) × 60 = 51.6
-- Volume: min(1200/1000, 1) × 40 = 40
-- Total: 91.6
+- Average rating contributes up to 70 points (4:1 ratio)
+- Review volume contributes up to 30 points on a log scale (diminishing returns: ~10 reviews → 15pts, 100 → 30pts)
+- Missing rating → 50 (default)
 
 ### 3. Shipping Speed (15%)
 
-**Score = max(0, 100 − (shipping_days × 15)) + (free_shipping ? 10 : 0)**
+**Score = clamp(100 − (days × 8) + (free_shipping ? 15 : 0), 0, 100)**
 
-- Each day of delay costs 15 points
-- Free shipping adds 10 bonus points
-- Same-day delivery = 100 + 10 = 110 (capped at 100)
-- Missing data defaults to 50
+- Each day of delay costs 8 points
+- Free shipping adds 15 bonus points
+- Missing data → 50
 
-**Example:** 2 days, free shipping:
-- Base: max(0, 100 − 30) = 70
-- Free: +10
-- Total: 80
+### 4. Vendor Reputation (15%)
 
-### 4. Trust (15%)
+**Score = clamp(50 + trustpilot_score × 6 + bbb_bonus + (warranty ? 10 : 0) + (return_policy ? 10 : 0), 0, 100)**
 
-**Score = (trustpilot_score / 5.0 × 50) + (has_warranty ? 25 : 0) + (has_return_policy ? 25 : 0)**
+- Starting baseline: 50
+- Trustpilot rating (0–5): contributes up to 30 points
+- BBB rating: A+ = +20, A = +15, A- = +10, B+ = +5, B = 0, C = −10, F = −20
+- Warranty presence: +10
+- Return policy: +10
+- If vendor sentiment is extracted from text (positive/negative keyword analysis), the score blends: `score × 0.4 + sentiment × 0.6`
+- Missing data → 50
 
-- Trustpilot rating contributes 50%
-- Warranty presence adds 25%
-- Return policy adds 25%
-- Missing data defaults to 50
+### 5. Warranty / Service (10%)
 
-### 5. Warranty (10%)
+**Score = 70 if warranty_found else 50**
 
-**Score = base_coverage_months × 2 + (easy_claim ? 10 : 0)**
-
-- Each month of coverage = 2 points
-- Easy online claim process = +10
-- Extended warranty available = +10
-- Maximum: 100 (36+ months + easy claim + extended)
+- Boolean check: if any warranty/guarantee keyword found in text
+- Missing data → 50 (default)
 
 ### 6. Sustainability (5%)
 
-**Score = eco_certifications × 15 + recycled_content × 10 + carbon_offset × 5**
+**Score = min(100, eco_keywords × 15)**
 
-- FSC/EPEAT/Energy Star certification = 15 each
-- Recycled packaging/content = 10
-- Carbon offset program = 5
-- Default: 40 (unknown)
+- Each matched keyword (eco-friendly, sustainable, energy star, recycled, carbon neutral, green, renewable) adds 15 points
+- Default: 40 (moderate penalty for unknown)
 
 ### 7. Secondhand Condition (5%)
 
-**Condition Grades:**
-- New/Open Box: 100
-- Like New: 85
-- Very Good: 70
-- Good: 55
-- Fair: 40
-- Poor: 20
+**Score = base_score × grade_multiplier**
 
-**Penalty Multiplier:** Refurbished items get a 0.9x multiplier on the price dimension (already factored into the overall score).
+- Base: 50 (always, no data source yet)
+- Grade multipliers applied when `is_secondhand` is set:
+
+| Grade | Multiplier |
+|-------|-----------|
+| Excellent | 0.9 |
+| Good | 0.7 |
+| Fair | 0.5 |
+| Acceptable | 0.3 |
+
+- Not yet populated from real data — always 50
 
 ### 8. Preference Alignment (5%)
 
-**User-configurable.** When a user specifies preferences (brand, color, feature), Sparrow scores how well each product matches:
+**Score = 50 (always)**
 
-- Exact match = 100
-- Partial match = 50–80
-- No match = 0–20
-- Default: 75 (assumed reasonable fit)
+- Not yet populated from real data.
 
 ---
 
-## How to Interpret Scores
+## Business / CFO Preset
 
-| Range | Grade | Meaning |
-|-------|-------|---------|
-| 90–100 | A+ | Excellent — strong across all dimensions |
-| 75–89 | A | Very Good — minor trade-offs |
-| 60–74 | B | Good — acceptable with caveats |
-| 45–59 | C | Fair — significant gaps |
-| 30–44 | D | Poor — avoid unless price is critical |
-| 0–29 | F | Unacceptable — major risks |
+7 dimensions weighted for total cost of ownership in procurement. Merges shipping + freight into a single logistics dimension. Lower weight on sustainability.
+
+| # | Dimension | Weight |
+|---|-----------|--------|
+| 1 | **Unit Price** | 25% |
+| 2 | **Quality Score** | 20% |
+| 3 | **Supplier Trust** | 15% |
+| 4 | **Compatibility Risk** | 13% |
+| 5 | **Logistics Score** | 15% |
+| 6 | **Speed & Reliability** | 10% |
+| 7 | **Sustainability** | 2% |
+
+**Total: 100%**
+
+### 1. Unit Price (25%)
+
+Identical algorithm to Consumer Price dimension.
+
+### 2. Quality Score (20%)
+
+Identical algorithm to Consumer Quality dimension.
+
+### 3. Supplier Trust (15%)
+
+Identical algorithm to Consumer Vendor Reputation dimension.
+
+### 4. Compatibility Risk (13%)
+
+**Score = 75 (always)**
+
+- Not yet populated from real data. Defaulting high since most search results are known-compatible.
+
+### 5. Logistics Score (15%)
+
+**Score =**
+- 100 if free shipping detected
+- `clamp(100 × (1 − cost / max(20, cost×2)), 0, 100)` if shipping cost data available
+- Falls back to Speed & Reliability algorithm if only shipping days are known
+- 50 if no data
+
+### 6. Speed & Reliability (10%)
+
+**Score = clamp(100 − (days × 8) + (free_shipping ? 15 : 0), 0, 100)**
+
+Identical algorithm to Consumer Shipping Speed dimension.
+
+### 7. Sustainability (2%)
+
+Identical algorithm to Consumer Sustainability dimension.
 
 ---
 
-## Customization
+## Uncertainty Penalty
 
-Weights can be adjusted per-job by editing `scorer.py`:
+When not all dimensions have real data, a confidence multiplier reduces the total score:
 
-```python
-custom_weights = {
-    "price": 0.30,        # Prioritize cost
-    "quality": 0.15,      # Less weight on quality
-    "shipping_speed": 0.20,  # Fast delivery matters
-    # ... etc
-}
+```
+confidence = 0.5 + 0.5 × (dimensions_with_data / total_dimensions)
 ```
 
-The total weight must sum to 1.0 (100%).
+- All dimensions with data: confidence = 1.0 (no penalty)
+- Half with data: confidence = 0.75
+- None with data: confidence = 0.5
+
+The confidence is applied multiplicatively to `total_weighted_score`.
 
 ---
 
-## Transparency Note
+## Reference Vendor Scoring
 
-All scores are derived from publicly available data. No opaque ML model determines the final ranking — the rubric is pure, auditable math. You can verify every score by checking the source data.
+When `--reference-vendor` is specified, the reference vendor's dimension scores become the baseline (50). Other products are scored relative:
+
+- If product score ≥ reference: `score = min(100, 50 + delta × 1.0)`
+- If product score < reference: `score = max(0, 50 + delta × 1.0)` (delta is negative)
+
+This creates a centered comparison where the current vendor is always at ~50 and alternatives are scored above/below.
+
+---
+
+## Data Quality Indicators
+
+Each dimension tracks whether its score is **data-backed** (●) or **defaulted** (○):
+
+| Indicator | Meaning |
+|-----------|---------|
+| ● | Score computed from real search/extraction data |
+| ○ | Score defaulted to 50 (or preset default) due to missing data |
+
+Reports display the ratio: "X/Y dimensions with data".
+
+---
+
+## Score Interpretation
+
+| Range | Meaning |
+|-------|---------|
+| 85–100 | Excellent — verified across multiple dimensions |
+| 70–84 | Good — minor data gaps or trade-offs |
+| 50–69 | Adequate — significant defaults or mediocre scores |
+| 0–49 | Poor — avoid unless price is critical |
+
+---
+
+## Preset Customization
+
+Weights can be overridden per-run:
+
+```bash
+python run.py "HP 64A toner" --custom-weights '{"price": 0.35, "quality": 0.25}'
+```
+
+Custom weights replace the preset weights entirely (fractional, sum not enforced but recommended ≈ 1.0).

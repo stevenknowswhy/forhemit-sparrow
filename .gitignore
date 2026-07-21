@@ -1,6 +1,7 @@
 # Virtual environments
 agent/venv/
 agent/__pycache__/
+**/__pycache__/
 marketing-site/.next/
 marketing-site/node_modules/
 sparrow-app/target/
@@ -25,3 +26,12 @@ sparrow-app/src-tauri/icons/
 # Cache
 .agnes/
 .cache/
+agent/.judge_cache.json
+agent/.data_extract_cache.json
+
+# Generated reports
+agent/reports/
+agent/static_reports/
+
+# User settings
+agent/user_settings.json

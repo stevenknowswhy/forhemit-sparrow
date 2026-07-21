@@ -32,6 +32,13 @@ from report_generator import generate_report
 from settings import load_settings
 from validator import validate_batch, apply_validation, print_validation_summary
 from judge import judge_batch
+from data_extractor import extract_batch
+
+_FIELDS_TO_MERGE = [
+    "shipping_days", "shipping_cost", "free_shipping",
+    "warranty_months", "has_warranty",
+    "vendor_sentiment", "eco_score", "eco_certifications",
+]
 
 
 def parse_query(query: str) -> str:
@@ -107,12 +114,41 @@ def fetch_products(search_term: str) -> list[dict]:
         ])
 
     elif results["provider"] == "serper":
+        organic_by_url = {}
+        organic_list = []
+        for r in results.get("results", []):
+            organic_by_url[r["url"]] = r
+            organic_list.append(r)
+
         for s in results.get("shopping", []):
+            snippet = s.get("snippet", "") or ""
+            extra = []
+            if not snippet:
+                match = organic_by_url.get(s["url"])
+                if match:
+                    snippet = match.get("snippet", "") or ""
+                    extra = match.get("extra_snippets", [])
+                else:
+                    title_keywords = set(s["title"].lower().replace("-", " ").split())
+                    title_keywords -= {"the", "a", "an", "for", "with", "and", "or", "of", "in", "on", "by", "to"}
+                    best = None
+                    best_score = 0
+                    for r in organic_list:
+                        r_words = set(r["title"].lower().replace("-", " ").split())
+                        overlap = len(title_keywords & r_words)
+                        same_domain = (s.get("source", "").lower() in r.get("url", "").lower())
+                        score = overlap + (10 if same_domain else 0)
+                        if score > best_score:
+                            best_score = score
+                            best = r
+                    if best:
+                        snippet = best.get("snippet", "") or ""
+                        extra = best.get("extra_snippets", [])
             products.append(_build_product(
                 title=s["title"],
                 url=s["url"],
-                snippet=s.get("snippet", ""),
-                extra_snippets=[],
+                snippet=snippet,
+                extra_snippets=extra,
                 raw_price=s.get("price_value"),
                 avg_rating=s.get("rating"),
                 review_count=s.get("review_count", 0),
@@ -131,6 +167,25 @@ def fetch_products(search_term: str) -> list[dict]:
                     review_count=r.get("review_count", 0),
                 ))
                 seen_urls.add(r["url"])
+
+    elif results["provider"] in ("walmart", "bestbuy"):
+        is_bestbuy = results["provider"] == "bestbuy"
+        for s in results.get("shopping", []):
+            p = _build_product(
+                title=s["title"],
+                url=s["url"],
+                snippet="",
+                extra_snippets=[],
+                raw_price=s.get("price_value"),
+                avg_rating=s.get("rating"),
+                review_count=s.get("review_count", 0),
+                source=s.get("source", results["provider"].title()),
+            )
+            if is_bestbuy:
+                p["free_shipping"] = s.get("free_shipping", False)
+                if s.get("shipping_cost") is not None:
+                    p["shipping_cost"] = s["shipping_cost"]
+            products.append(p)
 
     elif results["provider"] == "tavily":
         for r in results["results"]:
@@ -166,18 +221,19 @@ def fetch_products(search_term: str) -> list[dict]:
         page_data = extract_page_content("", html)
         if any(v for v in page_data.values() if v):
             p["_page_data"] = page_data
-            store = extract_store_name(url)
-            jsonld_types = []
-            for block in _find_json_ld_blocks(html):
-                items = block if isinstance(block, list) else [block]
-                for item in items:
-                    if isinstance(item, dict):
-                        t = item.get("@type", "")
-                        if isinstance(t, list):
-                            jsonld_types.extend(t)
-                        elif t:
-                            jsonld_types.append(t)
-            update_extraction_notes(store, jsonld_types=jsonld_types)
+        p["_page_html"] = html[:5000]
+        store = extract_store_name(url)
+        jsonld_types = []
+        for block in _find_json_ld_blocks(html):
+            items = block if isinstance(block, list) else [block]
+            for item in items:
+                if isinstance(item, dict):
+                    t = item.get("@type", "")
+                    if isinstance(t, list):
+                        jsonld_types.extend(t)
+                    elif t:
+                        jsonld_types.append(t)
+        update_extraction_notes(store, jsonld_types=jsonld_types)
 
     return products
 
@@ -213,6 +269,29 @@ def score_from_raw(products: list[dict], preset: str = "consumer") -> list[dict]
             p["_page_data"].pop("review_count", None)
             meta.update(p["_page_data"])
             meta["_page_sourced"] = True
+
+    llm_metas = extract_batch(products, model=None)
+    for p, llm_meta in zip(products, llm_metas):
+        if not llm_meta:
+            continue
+        meta = p.setdefault("_extracted", {})
+        for field in _FIELDS_TO_MERGE:
+            if field not in llm_meta:
+                continue
+            flag_field = f"{field}_found"
+            if flag_field in meta and meta.get(flag_field):
+                continue
+            meta[field] = llm_meta[field]
+            if flag_field in llm_meta:
+                meta[flag_field] = True
+        if p["shipping_days"] is None and meta.get("shipping_days_found"):
+            p["shipping_days"] = meta.get("shipping_days")
+        if not p["free_shipping"] and meta.get("free_shipping"):
+            p["free_shipping"] = True
+        if p["shipping_cost"] is None and meta.get("shipping_cost_found"):
+            p["shipping_cost"] = meta.get("shipping_cost")
+        if not p["has_warranty"] and meta.get("warranty_found"):
+            p["has_warranty"] = meta.get("has_warranty")
 
     prices = [p["raw_price"] for p in products if p.get("raw_price")]
     price_min = min(prices) if prices else 0
